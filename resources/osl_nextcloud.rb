@@ -1,3 +1,4 @@
+# proj-snowdrift civicrbm
 # To learn more about Custom Resources, see https://docs.chef.io/custom_resources/
 resource_name :nextcloud
 provides :nextcloud
@@ -6,12 +7,25 @@ unified_mode true
 default_action :create
 
 action :create do
-  default['php']['version'] = '5.6'
-  default['osl-php']['use_ius'] = true
-  default['osl-php']['php_packages'] = %w(pecl-memcached pecl-apc mcrypt mysqlnd pdo) # fpm
-  default['php']['fpm_package'] = 'php56u-fpm'
-  default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
-  default['osl-apache']['behind_loadbalancer'] = true
+  node['php']['version'] = '5.6'
+  node['osl-php']['use_ius'] = true
+
+  node['osl-php']['php_packages'] = %w(
+    php
+    php-gd
+    php-imagick
+    php-intl
+    php-json
+    php-mbstring
+    php-mysqlnd
+    php-opcache
+    php-pecl-apcu
+    php-redis
+    php-zip
+  )
+  node['php']['fpm_package'] = 'php56u-fpm'
+  node['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
+  node['osl-apache']['behind_loadbalancer'] = true
 
   include_recipe 'osl-git'
   include_recipe 'osl-php'
@@ -22,29 +36,45 @@ action :create do
     bzip2
     curl
     epel-release
+    mariadb
+    mariadb-server
     mlocate
     policycoreutils-python-utils
+    redis
     unzip
     wget
     yum-utils
   )
 
+  # After you have done this, make sure you create a database with a username
+  # and password so that Nextcloud will have access to it. For further details
+  # on database setup and configuration, see the Database configuration
+  # documentation.
+  # https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html
+  service %w(mariadb redis) do
+    action [:enable, :start]
+  end
+
   # Extract the archive
   ark 'nextcloud' do
     url 'https://download.nextcloud.com/server/releases/latest.tar.bz2'
-    move to '/var/www/html'
-  end
-  # then make directory www/html/nextcloud/data
-  # chown -R apache:apache /var/www/html/nextcloud
-  # proj-lf
-  # https://github.com/osuosl-cookbooks/proj-lf/blob/master/recipes/web1.rb
-
-  archive_file 'nextcloud archive' do
-    path '/tmp/nextcloud.tar.bz2'
-    destination '/var/www'
+    path '/var/www/html'
+    strip_components 0
+    action :put
   end
 
-  # Does the ${:serverName} thing work??
+  directory '/var/www/html/nextcloud/' do
+    owner 'apache'
+    group 'apache'
+  end
+
+  directory '/var/www/html/nextcloud/data' do
+    owner 'apache'
+    group 'apache'
+  end
+
+
+  # Want to make ${:serverName} work
   file '/etc/httpd/conf.d/nextcloud.conf' do
     content <<~EOS
     <VirtualHost *:80>
@@ -69,9 +99,6 @@ action :create do
     name :serverName
     directory '/var/www/html/nextcloud'
   end
-
-  # mod_{rewrite,headers,env,dir,mime}
-end
 end
 
 action :delete do
