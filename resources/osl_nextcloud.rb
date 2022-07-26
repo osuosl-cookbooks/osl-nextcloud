@@ -7,29 +7,31 @@ unified_mode true
 default_action :create
 
 action :create do
-  node['php']['version'] = '5.6'
-  node['osl-php']['use_ius'] = true
-
-  node['osl-php']['php_packages'] = %w(
-    php
-    php-gd
-    php-imagick
-    php-intl
-    php-json
-    php-mbstring
-    php-mysqlnd
-    php-opcache
-    php-pecl-apcu
-    php-redis
-    php-zip
-  )
-  node['php']['fpm_package'] = 'php56u-fpm'
-  node['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
-  node['osl-apache']['behind_loadbalancer'] = true
-
+  ::Chef::Resource.include Apache2::Cookbook::Helpers
+  include_recipe 'ark'
   include_recipe 'osl-git'
   include_recipe 'osl-php'
   include_recipe 'osl-apache'
+  # include_recipe 'osl-apache::mod_php'
+
+  node.default['php']['version'] = '7.4'
+  node.default['osl-php']['use_ius'] = true
+
+  node.default['osl-php']['php_packages'] = %w(
+    gd
+    imagick
+    intl
+    json
+    mbstring
+    mysqlnd
+    opcache
+    pecl-apcu
+    redis
+    zip
+  )
+  node.default['php']['fpm_package'] = 'php76u-fpm'
+  node.default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
+  node.default['osl-apache']['behind_loadbalancer'] = true
 
   package %w(
     bash-completion
