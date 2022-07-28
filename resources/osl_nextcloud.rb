@@ -7,13 +7,6 @@ unified_mode true
 default_action :create
 
 action :create do
-  ::Chef::Resource.include Apache2::Cookbook::Helpers
-  include_recipe 'ark'
-  include_recipe 'osl-git'
-  include_recipe 'osl-php'
-  include_recipe 'osl-apache'
-  # include_recipe 'osl-apache::mod_php'
-
   node.default['php']['version'] = '7.4'
   node.default['osl-php']['use_ius'] = true
 
@@ -32,6 +25,13 @@ action :create do
   node.default['php']['fpm_package'] = 'php76u-fpm'
   node.default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
   node.default['osl-apache']['behind_loadbalancer'] = true
+
+  ::Chef::Resource.include Apache2::Cookbook::Helpers
+
+  include_recipe 'ark'
+  include_recipe 'osl-git'
+  include_recipe 'osl-php'
+  include_recipe 'osl-apache'
 
   package %w(
     bash-completion
@@ -53,15 +53,17 @@ action :create do
   # on database setup and configuration, see the Database configuration
   # documentation.
   # https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html
-  service %w(mariadb redis) do
-    action [:enable, :start]
+  %w(mariadb redis).each do |s|
+    service s do
+      action [:enable, :start]
+    end
   end
 
   # Extract the archive
   ark 'nextcloud' do
     url 'https://download.nextcloud.com/server/releases/latest.tar.bz2'
     path '/var/www/html'
-    strip_components 0
+    strip_components 1 # Can't escape /var/www/html/nextcloud/nextcloud
     action :put
   end
 
@@ -75,6 +77,10 @@ action :create do
     group 'apache'
   end
 
+  directory '/etc/httpd/conf.d' do
+    owner 'apache'
+    group 'apache'
+  end
 
   # Want to make ${:serverName} work
   file '/etc/httpd/conf.d/nextcloud.conf' do
