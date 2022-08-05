@@ -13,5 +13,4 @@ depends          'osl-apache'
 depends          'osl-git'
 depends          'osl-php'
 
-supports          'centos', '~> 7.0'
-supports          'centos_stream', '~> 8.0'
+supports 'centos_stream', '~> 8.0'

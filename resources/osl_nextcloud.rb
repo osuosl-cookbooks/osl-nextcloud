@@ -1,8 +1,17 @@
 # proj-snowdrift civicrbm
 # To learn more about Custom Resources, see https://docs.chef.io/custom_resources/
-resource_name :nextcloud
-provides :nextcloud
+resource_name :osl_nextcloud
+provides :osl_nextcloud
 unified_mode true
+
+
+property :server_name # (also name property)
+property :version # default (latest version)
+property :checksum # (256sum of tarball): default latest version's checksum)
+property :database_host # (sensitive): required
+property :database_name # :required
+property :database_user # (sensitive): required
+property :database_password # (sensitive): required
 
 default_action :create
 
@@ -32,28 +41,15 @@ action :create do
   include_recipe 'osl-git'
   include_recipe 'osl-php'
   include_recipe 'osl-apache'
+  include_recipe 'osl-repos::epel'
 
   package %w(
-    bash-completion
-    bzip2
-    curl
-    epel-release
-    mariadb
-    mariadb-server
-    mlocate
-    policycoreutils-python-utils
     redis
-    unzip
     wget
     yum-utils
   )
 
-  # After you have done this, make sure you create a database with a username
-  # and password so that Nextcloud will have access to it. For further details
-  # on database setup and configuration, see the Database configuration
-  # documentation.
-  # https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html
-  %w(mariadb redis).each do |s|
+  %w(redis).each do |s|
     service s do
       action [:enable, :start]
     end
@@ -61,8 +57,8 @@ action :create do
 
   # Extract the archive
   ark 'nextcloud' do
-    url 'https://download.nextcloud.com/server/releases/latest.tar.bz2'
-    path '/var/www/html'
+    url 'https://download.nextcloud.com/server/releases/nextcloud-23.0.7.tar.bz2'
+    path '/opt/nextcloud'
     strip_components 1 # Can't escape /var/www/html/nextcloud/nextcloud
     action :put
   end
@@ -83,31 +79,21 @@ action :create do
   end
 
   # Want to make ${:serverName} work
-  file '/etc/httpd/conf.d/nextcloud.conf' do
-    content <<~EOS
-    <VirtualHost *:80>
-      DocumentRoot /var/www/html/nextcloud/
-      ServerName  ${:serverName}
 
-      <Directory /var/www/html/nextcloud/>
-        Require all granted
-        AllowOverride All
-        Options FollowSymLinks MultiViews
-
-        <IfModule mod_dav.c>
-          Dav off
-        </IfModule>
-
-      </Directory>
-    </VirtualHost>
-    EOS
+  service 'apache2' do
+    service_name lazy { apache_platform_service_name }
+    supports restart: true, status: true, reload: true, enable: true
+    action :nothing
   end
 
   apache_app '${serverName}' do
     name :serverName
-    directory '/var/www/html/nextcloud'
+    directory '/opt/nextcloud'
+    directory_options 'FollowSymLinks MultiViews'
+    allow_override 'All'
+    # Require all granted
+    #     <IfModule mod_dav.c>
+    #       Dav off
+    #     </IfModule>
   end
-end
-
-action :delete do
 end
