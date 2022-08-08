@@ -34,7 +34,7 @@ percona_mysql_user dbcreds['db_user'] do
 end
 
 percona_mysql_database dbcreds['db_dbname'] do
-  password node['percona']['server']['root_password'] = 'nextcloud'
+  password node['percona']['server']['root_password']
 end
 
 percona_mysql_user dbcreds['db_user'] do
@@ -47,9 +47,16 @@ percona_mysql_user dbcreds['db_user'] do
   action :grant
 end
 
+service 'apache2' do
+  service_name lazy { apache_platform_service_name }
+  supports restart: true, status: true, reload: true, enable: true
+  action :nothing
+end
+
 osl_nextcloud 'test' do
   database_host 'localhost'
   database_name 'nextcloud'
   database_user 'nextcloud'
   database_password 'nextcloud'
+  version '23.0.7'
 end

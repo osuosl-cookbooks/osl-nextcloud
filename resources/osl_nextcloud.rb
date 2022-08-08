@@ -5,13 +5,13 @@ provides :osl_nextcloud
 unified_mode true
 
 
-property :server_name # (also name property)
-property :version # default (latest version)
-property :checksum # (256sum of tarball): default latest version's checksum)
-property :database_host # (sensitive): required
+property :server_name, String, default: 'nextcloud' # (also name property)
+property :version, String, default: '23.0.7'
+property :checksum, String, default: '320c81f9b902922b4bcef3eacf858596a14347fd45bddd26dac198562d212439' # (256sum of tarball): default latest version's checksum)
+property :database_host, sensitive: true # required
 property :database_name # :required
-property :database_user # (sensitive): required
-property :database_password # (sensitive): required
+property :database_user, sensitive: true # required
+property :database_password, sensitive: true # required
 
 default_action :create
 
@@ -43,21 +43,15 @@ action :create do
   include_recipe 'osl-apache'
   include_recipe 'osl-repos::epel'
 
-  package %w(
-    redis
-    wget
-    yum-utils
-  )
+  package redis
 
-  %w(redis).each do |s|
-    service s do
-      action [:enable, :start]
-    end
+  service 'redis' do
+    action [:enable, :start]
   end
 
   # Extract the archive
   ark 'nextcloud' do
-    url 'https://download.nextcloud.com/server/releases/nextcloud-23.0.7.tar.bz2'
+    url 'https://download.nextcloud.com/server/releases/nextcloud-#{new_resource.version}.tar.bz2'
     path '/opt/nextcloud'
     strip_components 1 # Can't escape /var/www/html/nextcloud/nextcloud
     action :put
@@ -78,16 +72,14 @@ action :create do
     group 'apache'
   end
 
-  # Want to make ${:serverName} work
+  # service 'apache2' do
+  #   service_name lazy { apache_platform_service_name }
+  #   supports restart: true, status: true, reload: true, enable: true
+  #   action :nothing
+  # end
 
-  service 'apache2' do
-    service_name lazy { apache_platform_service_name }
-    supports restart: true, status: true, reload: true, enable: true
-    action :nothing
-  end
-
-  apache_app '${serverName}' do
-    name :serverName
+  apache_app '#{new_resource.server_name}' do
+    name new_resource.server_name
     directory '/opt/nextcloud'
     directory_options 'FollowSymLinks MultiViews'
     allow_override 'All'

@@ -13,4 +13,3 @@ suites:
   - name: default
     run_list:
       - recipe[nextcloud-test::default]
-      - recipe[osl-nextcloud::default]
