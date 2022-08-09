@@ -25,7 +25,6 @@ dbcreds = data_bag_item('nextcloud', 'credentials')
 
 include_recipe 'osl-mysql::server'
 
-
 percona_mysql_user dbcreds['db_user'] do
   host dbcreds['db_host']
   password dbcreds['db_passw']
