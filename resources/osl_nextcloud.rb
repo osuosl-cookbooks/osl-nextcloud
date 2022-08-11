@@ -48,10 +48,21 @@ action :create do
     action [:enable, :start]
   end
 
+  apache_app new_resource.server_name do
+    # name new_resource.server_name
+    # directory '/opt/nextcloud'
+    directory_options %w(FollowSymLinks MultiViews)
+    allow_override 'All'
+    # Require all granted
+    #     <IfModule mod_dav.c>
+    #       Dav off
+    #     </IfModule>
+  end
+
   # Extract the archive
   ark 'nextcloud' do
     url "https://download.nextcloud.com/server/releases/nextcloud-#{new_resource.version}.tar.bz2"
-    path '/opt/nextcloud'
+    path '/var/www/html/'
     strip_components 1 # Can't escape /var/www/html/nextcloud/nextcloud
     action :put
   end
@@ -71,20 +82,7 @@ action :create do
     group 'apache'
   end
 
-  # service 'apache2' do
-  #   service_name lazy { apache_platform_service_name }
-  #   supports restart: true, status: true, reload: true, enable: true
-  #   action :nothing
-  # end
-
-  apache_app "#{new_resource.server_name}" do
-    name new_resource.server_name
-    directory '/opt/nextcloud'
-    directory_options ['FollowSymLinks', 'MultiViews']
-    allow_override 'All'
-    # Require all granted
-    #     <IfModule mod_dav.c>
-    #       Dav off
-    #     </IfModule>
+  service 'httpd' do
+    action :restart
   end
 end
