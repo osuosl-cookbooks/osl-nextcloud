@@ -20,17 +20,16 @@ action :create do
 
   node.default['osl-php']['php_packages'] = %w(
     gd
-    imagick
     intl
     json
     mbstring
     mysqlnd
     opcache
     pecl-apcu
-    redis
+    pecl-imagick
     zip
   )
-  node.default['php']['fpm_package'] = 'php76u-fpm'
+  node.default['php']['fpm_package'] = 'php74u-fpm'
   node.default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
   node.default['osl-apache']['behind_loadbalancer'] = true
 
@@ -39,6 +38,7 @@ action :create do
   include_recipe 'ark'
   include_recipe 'osl-git'
   include_recipe 'osl-php'
+  include_recipe 'osl-apache::mod_php'
   include_recipe 'osl-apache'
   include_recipe 'osl-repos::epel'
 

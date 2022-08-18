@@ -18,8 +18,8 @@
 
 node.override['percona']['version'] = '5.7'
 
-node.default['percona']['server']['root_password'] = 'nextcloud'
-node.default['percona']['backup']['password'] = 'nextcloud'
+node.default['percona']['server']['root_password'] = "nextcloud"
+node.default['percona']['backup']['password'] = "nextcloud"
 
 dbcreds = data_bag_item('nextcloud', 'credentials')
 
