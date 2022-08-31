@@ -1,6 +1,6 @@
 # proj-snowdrift civicrbm
 # To learn more about Custom Resources, see https://docs.chef.io/custom_resources/
-resource_name :osl_nextcloud
+# resource_name :osl_nextcloud
 provides :osl_nextcloud
 unified_mode true
 
@@ -11,6 +11,8 @@ property :database_host, String, sensitive: true # required
 property :database_name, String # :required
 property :database_user, String, sensitive: true # required
 property :database_password, String, sensitive: true # required
+property :nextcloud_user , String, sensitive: true # required
+property :nextcloud_password, String, sensitive: true # required
 
 default_action :create
 
@@ -63,7 +65,7 @@ action :create do
   ark 'nextcloud' do
     url "https://download.nextcloud.com/server/releases/nextcloud-#{new_resource.version}.tar.bz2"
     path '/var/www/html/'
-    strip_components 1 # Can't escape /var/www/html/nextcloud/nextcloud
+    strip_components 1
     action :put
   end
 
@@ -72,9 +74,20 @@ action :create do
     group 'apache'
   end
 
-  directory '/var/www/html/nextcloud/data' do
-    owner 'apache'
-    group 'apache'
+  execute 'chown-apache' do
+    command 'chown -R apache:apache /var/www/html/nextcloud'
+    user 'root'
+  end
+
+  execute 'occ-nextcloud' do
+    cwd '/var/www/html/nextcloud/'
+    user 'apache'
+    command "php occ maintenance:install --database 'mysql' \
+    --database-name #{new_resource.database_name} \
+    --database-user #{new_resource.database_user} \
+    --database-pass #{new_resource.database_password} \
+    --admin-user #{new_resource.nextcloud_user} \
+    --admin-pass #{new_resource.nextcloud_password}"
   end
 
   directory '/etc/httpd/conf.d' do

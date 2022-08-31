@@ -13,7 +13,7 @@ cookbook 'osl-repos', git: 'git@github.com:osuosl-cookbooks/osl-repos.git'
 cookbook 'osl-rsync', git: 'git@github.com:osuosl-cookbooks/osl-rsync.git'
 cookbook 'osl-selinux', git: 'git@github.com:osuosl-cookbooks/osl-selinux.git'
 cookbook 'base', git: 'git@github.com:osuosl-cookbooks/base.git'
-cookbook 'percona', git: 'https://github.com/sous-chefs/percona.git', branch: 'myisam_repair_threads-deprecation'
+cookbook 'osl-resources', git: 'git@github.com:osuosl-cookbooks/osl-resources', branch: 'main'
 
 cookbook 'nextcloud-test', path: 'test/cookbooks/nextcloud-test'
 

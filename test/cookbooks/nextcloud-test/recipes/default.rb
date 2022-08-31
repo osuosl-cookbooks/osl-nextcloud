@@ -57,5 +57,7 @@ osl_nextcloud 'test' do
   database_name 'nextcloud'
   database_user 'nextcloud'
   database_password 'nextcloud'
+  nextcloud_user 'admin'
+  nextcloud_password 'unguessable'
   version '23.0.7'
 end
