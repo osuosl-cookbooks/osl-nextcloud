@@ -1,18 +1,15 @@
-# proj-snowdrift civicrbm
-# To learn more about Custom Resources, see https://docs.chef.io/custom_resources/
-# resource_name :osl_nextcloud
 provides :osl_nextcloud
 unified_mode true
 
 property :server_name, String, default: 'nextcloud' # (also name property)
 property :version, String, default: '23.0.7'
 property :checksum, String, default: '320c81f9b902922b4bcef3eacf858596a14347fd45bddd26dac198562d212439' # (256sum of tarball): default latest version's checksum)
-property :database_host, String, sensitive: true # required
-property :database_name, String # :required
-property :database_user, String, sensitive: true # required
-property :database_password, String, sensitive: true # required
-property :nextcloud_user , String, sensitive: true # required
-property :nextcloud_password, String, sensitive: true # required
+property :database_host, String, sensitive: true, required: true
+property :database_name, String, required: true
+property :database_user, String, sensitive: true, required: true
+property :database_password, String, sensitive: true, required: true
+property :nextcloud_user , String, sensitive: true, required: true
+property :nextcloud_password, String, sensitive: true, required: true
 
 default_action :create
 
@@ -51,17 +48,10 @@ action :create do
   end
 
   apache_app new_resource.server_name do
-    # name new_resource.server_name
-    # directory '/opt/nextcloud'
     directory_options %w(FollowSymLinks MultiViews)
     allow_override 'All'
-    # Require all granted
-    #     <IfModule mod_dav.c>
-    #       Dav off
-    #     </IfModule>
   end
 
-  # Extract the archive
   ark 'nextcloud' do
     url "https://download.nextcloud.com/server/releases/nextcloud-#{new_resource.version}.tar.bz2"
     path '/var/www/html/'
