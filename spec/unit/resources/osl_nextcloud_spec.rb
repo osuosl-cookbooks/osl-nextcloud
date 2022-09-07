@@ -4,9 +4,12 @@ describe 'nextcloud-test::default' do
   recipe do
     osl_nextcloud 'test' do
       database_host 'localhost'
-      database_name 'test-db'
-      database_user 'test-user'
-      database_password 'test-pass'
+      database_name 'nextcloud'
+      database_user 'nextcloud'
+      database_password 'nextcloud'
+      nextcloud_user 'admin'
+      nextcloud_password 'unguessable'
+      trusted_domains %w(localhost 10.1.100.*)
       version '23.0.7'
     end
   end

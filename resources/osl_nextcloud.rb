@@ -10,6 +10,7 @@ property :database_user, String, sensitive: true, required: true
 property :database_password, String, sensitive: true, required: true
 property :nextcloud_user , String, sensitive: true, required: true
 property :nextcloud_password, String, sensitive: true, required: true
+property :trusted_domains, Array, default: ['localhost']
 
 default_action :create
 
@@ -78,6 +79,15 @@ action :create do
     --database-pass #{new_resource.database_password} \
     --admin-user #{new_resource.nextcloud_user} \
     --admin-pass #{new_resource.nextcloud_password}"
+  end
+  
+  for host in new_resource.trusted_domains
+    execute 'trusted-domains' do
+      cwd '/var/www/html/nextcloud/'
+      user 'apache'
+      command "php occ config:system:set trusted_domains \
+      #{new_resource.trusted_domains.find_index(host)} --value=#{host}"
+    end
   end
 
   directory '/etc/httpd/conf.d' do
