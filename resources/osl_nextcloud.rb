@@ -79,6 +79,8 @@ action :create do
     --database-pass #{new_resource.database_password} \
     --admin-user #{new_resource.nextcloud_user} \
     --admin-pass #{new_resource.nextcloud_password}"
+    sensitive true
+    creates '/var/www/html/nextcloud/occ'
   end
   
   for host in new_resource.trusted_domains
