@@ -70,6 +70,7 @@ action :create do
     user 'root'
   end
 
+  CAN_INSTALL = '/var/www/html/nextcloud/config/CAN_INSTALL'
   execute 'occ-nextcloud' do
     cwd '/var/www/html/nextcloud/'
     user 'apache'
@@ -80,7 +81,7 @@ action :create do
     --admin-user #{new_resource.nextcloud_user} \
     --admin-pass #{new_resource.nextcloud_password}"
     sensitive true
-    creates '/var/www/html/nextcloud/occ'
+    not_if { ::File.exist?(CAN_INSTALL) }
   end
   
   for host in new_resource.trusted_domains
