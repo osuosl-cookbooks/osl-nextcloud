@@ -58,11 +58,9 @@ action :create do
     path '/var/www/html/'
     strip_components 1
     action :put
-  end
-
-  directory '/var/www/html/nextcloud/' do
     owner 'apache'
     group 'apache'
+    creates '/var/www/html/nextcloud'
   end
 
   execute 'chown-apache' do

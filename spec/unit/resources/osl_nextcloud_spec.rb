@@ -1,52 +1,61 @@
 require 'spec_helper'
 
 describe 'nextcloud-test::default' do
-  recipe do
-    osl_nextcloud 'test' do
-      database_host 'localhost'
-      database_name 'nextcloud'
-      database_user 'nextcloud'
-      database_password 'nextcloud'
-      nextcloud_user 'admin'
-      nextcloud_password 'unguessable'
-      trusted_domains %w(localhost 10.1.100.*)
-      version '23.0.7'
-    end
-  end
+  ALL_PLATFORMS.each do |platform|
+    context "on platform #{platform[:platform]} #{platform[:version]}" do
+      let(:runner) do
+        ChefSpec::SoloRunner.new(
+          platform.dup.merge(step_into: ['osl_nextcloud'])
+        )
+      end
+      let(:node) { runner.node }
+      cached(:chef_run) { runner.converge(described_recipe) }
 
-  context 'centos' do
-    platform 'centos'
-    cached(:chef_run) { runner.converge(described_recipe) }
-    step_into 'osl_nextcloud'
+      include_context 'common_stubs'
 
-    it do
-      is_expected.to install_package('redis')
-      is_expected.to start_service('redis')
-      is_expected.to create_apache_app('test').with(
-        directory_options: %w(FollowSymLinks MultiViews),
-        allow_override: 'All'
-      )
+      it 'converges successfully' do
+        expect { chef_run }.to_not raise_error
+      end
 
-      is_expected.to put_ark('nextcloud').with(
-        url: "https://download.nextcloud.com/server/releases/nextcloud-23.0.7.tar.bz2",
-        path: '/var/www/html/',
-        strip_components: 1 # Can't escape /var/www/html/nextcloud/nextcloud
-      )
+      describe 'included recipes' do
+        %w(
+          ark
+          osl-git
+          osl-php
+          osl-apache::mod_php
+          osl-apache
+          osl-repos::epel
+        ).each do |r|
+          it do
+            expect(chef_run).to include_recipe(r)
+          end
+        end
+      end
 
-      is_expected.to create_directory('/var/www/html/nextcloud/').with(
-        owner: 'apache',
-        group: 'apache'
-      )
+      it { expect(chef_run).to install_package('redis') }
+      it { expect(chef_run).to enable_service('redis') }
+      it { expect(chef_run).to start_service('redis') }
 
-      is_expected.to create_directory('/var/www/html/nextcloud/data').with(
-        owner: 'apache',
-        group: 'apache'
-      )
 
-      is_expected.to create_directory('/etc/httpd/conf.d').with(
-        owner: 'apache',
-        group: 'apache'
-      )
+      it do
+        expect(chef_run).to put_ark('nextcloud').with(
+          url: 'https://download.nextcloud.com/server/releases/nextcloud-23.0.7.tar.bz2',
+          path: '/var/www/html/',
+          owner: 'apache',
+          group: 'apache',
+          creates: '/var/www/html/nextcloud'
+        )
+      end
+
+      describe 'installs nextcloud' do
+        it { expect(chef_run).to run_execute('occ-nextcloud').with(user: 'apache') }
+      end
+
+      describe 'trusted hosts' do
+        it { expect(chef_run).to run_execute('trusted-domains').with(user: 'apache') }
+      end
+
+      it { expect(chef_run).to restart_service('httpd') }
     end
   end
 end

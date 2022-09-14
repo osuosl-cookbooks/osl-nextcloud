@@ -24,10 +24,15 @@ control 'osl_nextcloud' do
     its('owner') { should eq 'apache' }
   end
 
+  describe file '/var/www/html/nextcloud/config/CAN_INSTALL' do
+    it { should_not exist }
+  end
+
   describe host('localhost') do
     it { should be_reachable }
     it { should be_resolvable }
   end
+
 
   describe http('http://localhost/nextcloud/index.php/login') do
     its('status') { should cmp 200 }
