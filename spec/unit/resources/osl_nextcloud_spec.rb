@@ -1,4 +1,5 @@
 require 'spec_helper'
+unified_mode true
 
 describe 'nextcloud-test::default' do
   ALL_PLATFORMS.each do |platform|
@@ -35,7 +36,6 @@ describe 'nextcloud-test::default' do
       it { expect(chef_run).to install_package('redis') }
       it { expect(chef_run).to enable_service('redis') }
       it { expect(chef_run).to start_service('redis') }
-
 
       it do
         expect(chef_run).to put_ark('nextcloud').with(

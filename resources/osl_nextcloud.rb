@@ -8,7 +8,7 @@ property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
 property :database_user, String, sensitive: true, required: true
 property :database_password, String, sensitive: true, required: true
-property :nextcloud_user , String, sensitive: true, required: true
+property :nextcloud_user, String, sensitive: true, required: true
 property :nextcloud_password, String, sensitive: true, required: true
 property :trusted_domains, Array, default: ['localhost']
 
@@ -68,7 +68,6 @@ action :create do
     user 'root'
   end
 
-  CAN_INSTALL = '/var/www/html/nextcloud/config/CAN_INSTALL'
   execute 'occ-nextcloud' do
     cwd '/var/www/html/nextcloud/'
     user 'apache'
@@ -79,10 +78,10 @@ action :create do
     --admin-user #{new_resource.nextcloud_user} \
     --admin-pass #{new_resource.nextcloud_password}"
     sensitive true
-    not_if { ::File.exist?(CAN_INSTALL) }
+    only_if { ::File.exist?('/var/www/html/nextcloud/config/CAN_INSTALL') }
   end
-  
-  for host in new_resource.trusted_domains
+
+  new_resource.trusted_domains.each do |host|
     execute 'trusted-domains' do
       cwd '/var/www/html/nextcloud/'
       user 'apache'

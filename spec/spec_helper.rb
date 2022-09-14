@@ -16,15 +16,14 @@ end
 
 shared_context 'common_stubs' do
   before do
-    stub_data_bag_item("nextcloud", "credentials").and_return(
-      "id" => "credentials",
-      "db_host" => "localhost",
-      "db_port" => "3306",
-      "db_user" => "nextcloud",
-      "db_passw" => "nextcloud",
-      "db_dbname" => "nextcloud"
+    stub_data_bag_item('nextcloud', 'credentials').and_return(
+      'id' => 'credentials',
+      'db_host' => 'localhost',
+      'db_port' => '3306',
+      'db_user' => 'nextcloud',
+      'db_passw' => 'nextcloud',
+      'db_dbname' => 'nextcloud'
     )
-  stub_command("mysqladmin --user=root --password='' version").and_return(true)
+    stub_command("mysqladmin --user=root --password='' version").and_return(true)
   end
-
 end

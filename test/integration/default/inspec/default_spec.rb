@@ -33,7 +33,6 @@ control 'osl_nextcloud' do
     it { should be_resolvable }
   end
 
-
   describe http('http://localhost/nextcloud/index.php/login') do
     its('status') { should cmp 200 }
   end
