@@ -43,27 +43,46 @@ action :create do
 
   dnf_module 'nextcloud:23'
 
+  package %w( nextcloud redis )
+
+  directory '/etc/httpd/nextcloud'
+  
+  # cookbook file resource for all .inc, put in 
+
+  %w(
+    nextcloud-access.conf.avail
+    nextcloud-auth-any.inc
+    nextcloud-auth-local.inc
+    nextcloud-auth-none.inc
+    nextcloud-defaults.inc
+  ).each do |f|
+    cookbook_file "/etc/httpd/nextcloud/#{f}" do
+      cookbook 'osl-nextcloud'
+    end
+  end
+
   apache_app new_resource.server_name do
     # directory_options %w(FollowSymLinks MultiViews)
     directory '/usr/share/nextcloud'
     allow_override 'All'
-    include_config true
+    cookbook_include 'osl-nextcloud'
+    include_config true # nextcloud.conf
+    include_name 'nextcloud' #files/default/nextcloud.conf
   end
+
+  file '/usr/share/nextcloud/config/CAN_INSTALL'
 
   #vi /etc/php.ini
   #Then find the line:
   #;date.timezone =
   #date.timezone = UTC
 
-  package %w( nextcloud redis )
 
   %w( redis ).each do |s|
     service s do
       action [:enable, :start]
     end
   end
-
-  # ln -s /etc/httpd/sites-available/nextcloud /etc/httpd/sites-enabled/
 
   execute 'chown-apache' do
     command 'chown -R apache:apache /usr/share/nextcloud'
@@ -92,9 +111,9 @@ action :create do
     end
   end
 
-  directory '/etc/httpd/conf.d' do
-    owner 'apache'
-    group 'apache'
-  end
+  # directory '/etc/httpd/conf.d' do
+  #   owner 'apache'
+  #   group 'apache'
+  # end
 
 end

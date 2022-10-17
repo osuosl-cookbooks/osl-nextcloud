@@ -53,12 +53,13 @@ service 'apache2' do
 end
 
 osl_nextcloud 'test' do
+  server_name 'nextcloud.example.com'
   database_host 'localhost'
   database_name 'nextcloud'
   database_user 'nextcloud'
   database_password 'nextcloud'
   nextcloud_user 'admin'
   nextcloud_password 'unguessable'
-  trusted_domains %w(localhost 10.1.100.* example.com)
+  trusted_domains %w(localhost 10.1.100.* nextcloud.example.com)
   version '23.0.7'
 end
