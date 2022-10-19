@@ -35,17 +35,19 @@ action :create do
 
   ::Chef::Resource.include Apache2::Cookbook::Helpers
 
-  include_recipe 'osl-git'
-  include_recipe 'osl-php'
   include_recipe 'osl-apache'
   include_recipe 'osl-apache::mod_php'
+  include_recipe 'osl-git'
+  include_recipe 'osl-php'
   include_recipe 'osl-repos::epel'
 
   dnf_module 'nextcloud:23'
 
   package %w( nextcloud redis )
 
-  directory '/etc/httpd/nextcloud'
+  directory '/etc/httpd/nextcloud' do
+    owner 'apache'
+  end
   
   # cookbook file resource for all .inc, put in 
 
@@ -70,7 +72,9 @@ action :create do
     include_name 'nextcloud' #files/default/nextcloud.conf
   end
 
-  file '/usr/share/nextcloud/config/CAN_INSTALL'
+  file '/usr/share/nextcloud/config/CAN_INSTALL' do
+    owner 'apache'
+  end
 
   #vi /etc/php.ini
   #Then find the line:
@@ -85,7 +89,12 @@ action :create do
   end
 
   execute 'chown-apache' do
-    command 'chown -R apache:apache /usr/share/nextcloud'
+    command 'chown -R apache:apache /usr/share/nextcloud/'
+    user 'root'
+  end
+   
+  execute 'chown-etc/nextcloud' do
+    command 'chown -R apache:apache /etc/nextcloud/*'
     user 'root'
   end
   

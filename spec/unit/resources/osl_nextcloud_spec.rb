@@ -19,11 +19,10 @@ describe 'nextcloud-test::default' do
 
       describe 'included recipes' do
         %w(
-            ark
+            osl-apache
+            osl-apache::mod_php
             osl-git
             osl-php
-            osl-apache::mod_php
-            osl-apache
             osl-repos::epel
           ).each do |r|
           it do
@@ -32,19 +31,10 @@ describe 'nextcloud-test::default' do
         end
       end
 
+      it { expect(chef_run).to install_package('nextcloud') }
       it { expect(chef_run).to install_package('redis') }
       it { expect(chef_run).to enable_service('redis') }
       it { expect(chef_run).to start_service('redis') }
-
-      it do
-        expect(chef_run).to put_ark('nextcloud').with(
-            url: 'https://download.nextcloud.com/server/releases/nextcloud-23.0.7.tar.bz2',
-            path: '/var/www/html/',
-            owner: 'apache',
-            group: 'apache',
-            creates: '/var/www/html/nextcloud'
-          )
-      end
 
       it 'installs nextcloud' do
         expect(chef_run).to run_execute('occ-nextcloud').with(user: 'apache')
@@ -53,8 +43,6 @@ describe 'nextcloud-test::default' do
       describe 'trusted hosts' do
         it { expect(chef_run).to run_execute('trusted-domains').with(user: 'apache') }
       end
-
-      it { expect(chef_run).to restart_service('httpd') }
     end
   end
 end
