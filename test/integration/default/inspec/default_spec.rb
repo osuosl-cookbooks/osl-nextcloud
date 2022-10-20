@@ -3,6 +3,9 @@
 # The InSpec reference, with examples and extensive documentation, can be
 # found at https://docs.chef.io/inspec/resources/
 control 'osl_nextcloud' do
+  describe package 'nextcloud' do
+    it { should be_installed }
+  end
   describe package 'redis' do
     it { should be_installed }
   end
@@ -14,18 +17,10 @@ control 'osl_nextcloud' do
     it { should be_running }
   end
 
-  describe directory '/var/www/html/nextcloud/' do
+  describe directory '/usr/share/nextcloud/data' do
     it { should exist }
     its('owner') { should eq 'apache' }
-  end
-
-  describe file '/var/www/html/nextcloud/' do
-    it { should exist }
-    its('owner') { should eq 'apache' }
-  end
-
-  describe file '/var/www/html/nextcloud/config/CAN_INSTALL' do
-    it { should_not exist }
+    its('group') { should eq 'apache' }
   end
 
   describe host('localhost') do
@@ -33,7 +28,9 @@ control 'osl_nextcloud' do
     it { should be_resolvable }
   end
 
-  describe http('http://localhost/nextcloud/index.php/login') do
-    its('status') { should cmp 200 }
+  describe http('http://localhost',
+                headers: {'host' => 'nextcloud.example.com'}) do
+    its('status') { should eq 200 }
+    its('headers.Content-Type') { should match 'text/html' }
   end
 end

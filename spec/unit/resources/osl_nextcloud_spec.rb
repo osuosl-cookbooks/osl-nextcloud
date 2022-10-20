@@ -31,8 +31,7 @@ describe 'nextcloud-test::default' do
         end
       end
 
-      it { expect(chef_run).to install_package('nextcloud') }
-      it { expect(chef_run).to install_package('redis') }
+      it { expect(chef_run).to install_package(['nextcloud', 'redis']) }
       it { expect(chef_run).to enable_service('redis') }
       it { expect(chef_run).to start_service('redis') }
 
