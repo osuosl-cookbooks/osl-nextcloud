@@ -61,5 +61,4 @@ osl_nextcloud 'test' do
   nextcloud_user 'admin'
   nextcloud_password 'unguessable'
   trusted_domains %w(localhost 10.1.100.* nextcloud.example.com)
-  version '23.0.7'
 end

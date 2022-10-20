@@ -1,9 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :server_name, String, default: 'nextcloud' # (also name property)
-property :version, String, default: '23.0.7'
-property :checksum, String, default: '320c81f9b902922b4bcef3eacf858596a14347fd45bddd26dac198562d212439' # (256sum of tarball): default latest version's checksum)
+property :server_name, String
 property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
 property :database_user, String, sensitive: true, required: true
@@ -48,8 +46,6 @@ action :create do
   directory '/etc/httpd/nextcloud' do
     owner 'apache'
   end
-  
-  # cookbook file resource for all .inc, put in 
 
   %w(
     nextcloud-access.conf.avail
@@ -64,43 +60,35 @@ action :create do
   end
 
   apache_app new_resource.server_name do
-    # directory_options %w(FollowSymLinks MultiViews)
     directory '/usr/share/nextcloud'
     allow_override 'All'
     cookbook_include 'osl-nextcloud'
-    include_config true # nextcloud.conf
-    include_name 'nextcloud' #files/default/nextcloud.conf
+    include_config true
+    include_name 'nextcloud'
   end
 
   file '/usr/share/nextcloud/config/CAN_INSTALL' do
     owner 'apache'
   end
 
-  #vi /etc/php.ini
-  #Then find the line:
-  #;date.timezone =
-  #date.timezone = UTC
-
-
-  %w( redis ).each do |s|
-    service s do
-      action [:enable, :start]
-    end
+  service 'redis' do
+    action [:enable, :start]
   end
 
   execute 'chown-apache' do
     command 'chown -R apache:apache /usr/share/nextcloud/'
     user 'root'
   end
-   
+
   execute 'chown-etc/nextcloud' do
     command 'chown -R apache:apache /etc/nextcloud/*'
     user 'root'
   end
-  
+
   execute 'occ-nextcloud' do
     cwd '/usr/share/nextcloud/'
     user 'apache'
+    group 'apache'
     command "php occ maintenance:install --database 'mysql' \
     --database-name #{new_resource.database_name} \
     --database-user #{new_resource.database_user} \
@@ -108,9 +96,9 @@ action :create do
     --admin-user #{new_resource.nextcloud_user} \
     --admin-pass #{new_resource.nextcloud_password}"
     sensitive true
-    only_if { ::File.exist?('/usr/share/nextcloud/config/CAN_INSTALL') }
+    creates '/usr/share/nextcloud/data'
   end
-  
+
   new_resource.trusted_domains.each do |host|
     execute 'trusted-domains' do
       cwd '/usr/share/nextcloud/'
@@ -119,10 +107,4 @@ action :create do
       #{new_resource.trusted_domains.find_index(host)} --value=#{host}"
     end
   end
-
-  # directory '/etc/httpd/conf.d' do
-  #   owner 'apache'
-  #   group 'apache'
-  # end
-
 end
