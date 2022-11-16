@@ -25,25 +25,16 @@ dbcreds = data_bag_item('nextcloud', 'credentials')
 
 include_recipe 'osl-mysql::server'
 
-percona_mysql_user dbcreds['db_user'] do
-  host dbcreds['db_host']
-  password dbcreds['db_passw']
-  ctrl_password node['percona']['server']['root_password']
-  action :create
-end
-
 percona_mysql_database dbcreds['db_dbname'] do
   password node['percona']['server']['root_password']
 end
 
 percona_mysql_user dbcreds['db_user'] do
-  host dbcreds['db_host']
   database_name dbcreds['db_dbname']
-  privileges ['ALL PRIVILEGES']
-  table '*'
   password dbcreds['db_passw']
+  host dbcreds['db_host']
   ctrl_password node['percona']['server']['root_password']
-  action :grant
+  action [:create, :grant]
 end
 
 service 'apache2' do
@@ -53,12 +44,13 @@ service 'apache2' do
 end
 
 osl_nextcloud 'test' do
+  version '23'
   server_name 'nextcloud.example.com'
   database_host 'localhost'
   database_name 'nextcloud'
   database_user 'nextcloud'
   database_password 'nextcloud'
-  nextcloud_user 'admin'
-  nextcloud_password 'unguessable'
-  trusted_domains %w(localhost 10.1.100.* nextcloud.example.com)
+  nextcloud_admin_user 'admin'
+  nextcloud_admin_password 'unguessable'
+  server_aliases %w(localhost nextcloud.example.com)
 end

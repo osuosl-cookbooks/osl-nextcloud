@@ -29,7 +29,7 @@ control 'osl_nextcloud' do
   end
 
   describe http('http://localhost',
-                headers: {'host' => 'nextcloud.example.com'}) do
+                headers: { 'host' => 'nextcloud.example.com' }) do
     its('status') { should eq 200 }
     its('headers.Content-Type') { should match 'text/html' }
   end

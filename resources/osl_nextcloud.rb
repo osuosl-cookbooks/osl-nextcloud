@@ -1,14 +1,15 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :server_name, String
 property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
-property :database_user, String, sensitive: true, required: true
 property :database_password, String, sensitive: true, required: true
-property :nextcloud_user, String, sensitive: true, required: true
-property :nextcloud_password, String, sensitive: true, required: true
-property :trusted_domains, Array, default: ['localhost']
+property :database_user, String, sensitive: true, required: true
+property :nextcloud_admin_password, String, sensitive: true, required: true
+property :nextcloud_admin_user, String, sensitive: true, required: true
+property :server_name, String, name_property: true
+property :server_aliases, Array, default: %w(localhost)
+property :version, String, required: true
 
 default_action :create
 
@@ -27,6 +28,7 @@ action :create do
     pecl-imagick
     zip
   )
+  node.default['php']['directives']['memory_limit'] = '512M'
   node.default['php']['fpm_package'] = 'php80u-fpm'
   node.default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
   node.default['osl-apache']['behind_loadbalancer'] = true
@@ -39,9 +41,9 @@ action :create do
   include_recipe 'osl-php'
   include_recipe 'osl-repos::epel'
 
-  dnf_module 'nextcloud:23'
+  dnf_module "nextcloud:#{new_resource.version}"
 
-  package %w( nextcloud redis )
+  package %w(nextcloud redis)
 
   directory '/etc/httpd/nextcloud' do
     owner 'apache'
@@ -67,22 +69,15 @@ action :create do
     include_name 'nextcloud'
   end
 
-  file '/usr/share/nextcloud/config/CAN_INSTALL' do
-    owner 'apache'
-  end
+  file '/usr/share/nextcloud/config/CAN_INSTALL'
 
   service 'redis' do
     action [:enable, :start]
   end
 
-  execute 'chown-apache' do
-    command 'chown -R apache:apache /usr/share/nextcloud/'
-    user 'root'
-  end
-
-  execute 'chown-etc/nextcloud' do
-    command 'chown -R apache:apache /etc/nextcloud/*'
-    user 'root'
+  directory '/usr/share/nextcloud/data' do
+    owner 'apache'
+    group 'apache'
   end
 
   execute 'occ-nextcloud' do
@@ -93,18 +88,19 @@ action :create do
     --database-name #{new_resource.database_name} \
     --database-user #{new_resource.database_user} \
     --database-pass #{new_resource.database_password} \
-    --admin-user #{new_resource.nextcloud_user} \
-    --admin-pass #{new_resource.nextcloud_password}"
+    --admin-user #{new_resource.nextcloud_admin_user} \
+    --admin-pass #{new_resource.nextcloud_admin_password}"
     sensitive true
-    creates '/usr/share/nextcloud/data'
+    only_if { can_install? }
   end
 
-  new_resource.trusted_domains.each do |host|
-    execute 'trusted-domains' do
-      cwd '/usr/share/nextcloud/'
+  new_server_aliases = [new_resource.server_name, new_resource.server_aliases].flatten!.sort
+  new_server_aliases.each do |domain|
+    execute "trusted-domains-#{domain}" do
+      cwd '/usr/share/nextcloud'
       user 'apache'
-      command "php occ config:system:set trusted_domains \
-      #{new_resource.trusted_domains.find_index(host)} --value=#{host}"
+      command "php occ config:system:set trusted_domains #{new_resource.server_aliases.find_index(domain)} --value=#{domain}"
+      not_if { new_resource.server_aliases.include?(domain) }
     end
   end
 end

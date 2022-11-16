@@ -1,6 +1,10 @@
 require 'spec_helper'
 
 describe 'nextcloud-test::default' do
+  stubs_for_provider("osl_nextcloud[test]") do |provider|
+    allow(provider).to receive_shell_out("php occ config:list", {:cwd=>"/usr/share/nextcloud/" , :user=>"apache", :group=>"apache"})
+    allow(provider).to receive_shell_out('php occ config:list', {cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache'})
+  end
   ALL_PLATFORMS.each do |platform|
     context "on platform #{platform[:platform]} #{platform[:version]}" do
       let(:runner) do
@@ -31,7 +35,7 @@ describe 'nextcloud-test::default' do
         end
       end
 
-      it { expect(chef_run).to install_package(['nextcloud', 'redis']) }
+      it { expect(chef_run).to install_package(%w(nextcloud redis)) }
       it { expect(chef_run).to enable_service('redis') }
       it { expect(chef_run).to start_service('redis') }
 
