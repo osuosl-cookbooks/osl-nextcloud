@@ -28,6 +28,12 @@ control 'osl_nextcloud' do
     it { should be_resolvable }
   end
 
+  describe command('sudo -u apache php /usr/share/nextcloud/occ status') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match /installed: true/ }
+    its('stdout') { should match /versionstring: 23.0.7/ }
+  end
+
   describe http('http://localhost',
                 headers: { 'host' => 'nextcloud.example.com' }) do
     its('status') { should eq 200 }
