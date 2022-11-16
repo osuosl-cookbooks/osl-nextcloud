@@ -45,9 +45,7 @@ action :create do
 
   package %w(nextcloud redis)
 
-  directory '/etc/httpd/nextcloud' do
-    owner 'apache'
-  end
+  directory '/etc/httpd/nextcloud'
 
   %w(
     nextcloud-access.conf.avail
@@ -94,13 +92,14 @@ action :create do
     only_if { can_install? }
   end
 
-  new_server_aliases = [new_resource.server_name, new_resource.server_aliases].flatten!.sort
-  new_server_aliases.each do |domain|
+  cur_trusted_domains = osl_nextcloud_config['system']['trusted_domains']
+  new_trusted_domains = [new_resource.server_name, new_resource.server_aliases].flatten!.sort
+  new_trusted_domains.each do |domain|
     execute "trusted-domains-#{domain}" do
       cwd '/usr/share/nextcloud'
       user 'apache'
       command "php occ config:system:set trusted_domains #{new_resource.server_aliases.find_index(domain)} --value=#{domain}"
-      not_if { new_resource.server_aliases.include?(domain) }
+      not_if { cur_trusted_domains.include?(domain) }
     end
   end
 end
