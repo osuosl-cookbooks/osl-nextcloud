@@ -2,6 +2,7 @@ require 'spec_helper'
 
 describe 'nextcloud-test::default' do
   stubs_for_provider('osl_nextcloud[test]') do |provider|
+    allow_any_instance_of(osl_nextcloud_config).to receive().and_return(user) 
     domains_json = {"system" => { "trusted_domains" => ["localhost","nextcloud.example.com"] } }
     allow(provider).to receive_shell_out('php occ config:list', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(domains_json)
   end

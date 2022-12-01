@@ -67,7 +67,7 @@ action :create do
     include_name 'nextcloud'
   end
 
-  file '/usr/share/nextcloud/config/CAN_INSTALL'
+  # file '/usr/share/nextcloud/config/CAN_INSTALL'
 
   service 'redis' do
     action [:enable, :start]
