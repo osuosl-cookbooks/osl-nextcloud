@@ -1,7 +1,5 @@
 # InSpec test for recipe osl-nextcloud::default
 
-# The InSpec reference, with examples and extensive documentation, can be
-# found at https://docs.chef.io/inspec/resources/
 control 'osl_nextcloud' do
   describe package 'nextcloud' do
     it { should be_installed }

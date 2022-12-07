@@ -2,8 +2,6 @@ source 'https://supermarket.chef.io'
 
 solver :ruby, :required
 
-cookbook 'base', git: 'git@github.com:osuosl-cookbooks/base.git'
-cookbook 'nextcloud-test', path: 'test/cookbooks/nextcloud-test'
 cookbook 'osl-apache', git: 'git@github.com:osuosl-cookbooks/osl-apache.git', branch: 'libphp8-helper-fix'
 cookbook 'osl-firewall', git: 'git@github.com:osuosl-cookbooks/osl-firewall'
 cookbook 'osl-git', git: 'git@github.com:osuosl-cookbooks/osl-git.git'
@@ -15,5 +13,7 @@ cookbook 'osl-repos', git: 'git@github.com:osuosl-cookbooks/osl-repos.git'
 cookbook 'osl-resources', git: 'git@github.com:osuosl-cookbooks/osl-resources', branch: 'main'
 cookbook 'osl-rsync', git: 'git@github.com:osuosl-cookbooks/osl-rsync.git'
 cookbook 'osl-selinux', git: 'git@github.com:osuosl-cookbooks/osl-selinux.git'
+
+cookbook 'nextcloud-test', path: 'test/cookbooks/nextcloud-test'
 
 metadata

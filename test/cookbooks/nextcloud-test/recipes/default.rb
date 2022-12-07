@@ -17,7 +17,6 @@
 # limitations under the License.
 
 node.override['percona']['version'] = '5.7'
-
 node.default['percona']['server']['root_password'] = 'nextcloud'
 node.default['percona']['backup']['password'] = 'nextcloud'
 

@@ -25,10 +25,7 @@ shared_context 'common_stubs' do
       'db_dbname' => 'nextcloud'
     )
     stub_command("mysqladmin --user=root --password='' version").and_return(true)
-    stub_command("php occ | grep maintenance:install").and_return(true)
-    stub_command("php occ config:list").and_return(true)
-
-    allow(File).to receive(:exist?).and_call_original
-    allow(File).to receive(:exist?).with('/var/www/html/nextcloud/config/CAN_INSTALL').and_return(true)
+    stub_command('php occ | grep maintenance:install').and_return(true)
+    stub_command('php occ config:list').and_return(true)
   end
 end

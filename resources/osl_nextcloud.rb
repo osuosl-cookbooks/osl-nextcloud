@@ -67,8 +67,6 @@ action :create do
     include_name 'nextcloud'
   end
 
-  # file '/usr/share/nextcloud/config/CAN_INSTALL'
-
   service 'redis' do
     action [:enable, :start]
   end
@@ -83,11 +81,11 @@ action :create do
     user 'apache'
     group 'apache'
     command "php occ maintenance:install --database 'mysql' \
-    --database-name #{new_resource.database_name} \
-    --database-user #{new_resource.database_user} \
-    --database-pass #{new_resource.database_password} \
-    --admin-user #{new_resource.nextcloud_admin_user} \
-    --admin-pass #{new_resource.nextcloud_admin_password}"
+      --database-name #{new_resource.database_name} \
+      --database-user #{new_resource.database_user} \
+      --database-pass #{new_resource.database_password} \
+      --admin-user #{new_resource.nextcloud_admin_user} \
+      --admin-pass #{new_resource.nextcloud_admin_password}"
     sensitive true
     only_if { can_install? }
   end
