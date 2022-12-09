@@ -16,12 +16,9 @@ describe 'nextcloud-test::default' do
       occ_config = '{"system": { "trusted_domains": [ "localhost", "nextcloud.example.com" ] }}'
       occ_config = JSON.parse(occ_config)
 
-      occ_config_new = '{"system": { "trusted_domains": [ "junk", "aaaah" ] }}'
+      occ_config_new = '{"system": { "trusted_domains": [ "localhost" ] }}'
       occ_config_new = JSON.parse(occ_config_new)
 
-      stubs_for_provider("osl_nextcloud[test]") do |provider|
-        allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(true)
-      end
 
       it 'converges successfully' do
         expect { chef_run }.to_not raise_error
@@ -58,24 +55,24 @@ describe 'nextcloud-test::default' do
       it { expect(chef_run).to enable_service('redis') }
       it { expect(chef_run).to start_service('redis') }
 
-      it 'installs nextcloud' do
-        expect(chef_run).to run_execute('occ-nextcloud').with(user: 'apache')
-      end
-
-      describe 'update trusted hosts' do
+      context 'nextcloud not installed' do
         before do
-          allow(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config_new)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config_new)
         end
-        it { expect(chef_run).to run_execute('trusted-domains-localhost').with(user: 'apache') }
+        it { expect(chef_run).to run_execute('occ-nextcloud').with(user: 'apache') }
+        it { expect(chef_run).to_not run_execute('trusted-domains-localhost').with(user: 'apache') }
         it { expect(chef_run).to run_execute('trusted-domains-nextcloud.example.com').with(user: 'apache') }
       end
 
-      describe 'skip trusted hosts' do
+      context 'nextcloud installed' do
         before do
-          allow(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(true)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
         end
         it { expect(chef_run).to_not run_execute('trusted-domains-localhost').with(user: 'apache') }
         it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com').with(user: 'apache') }
+        it { expect(chef_run).to_not run_execute('occ-nextcloud').with(user: 'apache') }
       end
 
     end

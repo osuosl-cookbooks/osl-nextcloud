@@ -90,7 +90,6 @@ action :create do
     only_if { can_install? }
   end
 
-  return
   cur_trusted_domains = osl_nextcloud_config['system']['trusted_domains']
   new_trusted_domains = [new_resource.server_name, new_resource.server_aliases].flatten!.sort
   new_trusted_domains.each do |domain|
