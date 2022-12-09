@@ -29,7 +29,6 @@ describe 'nextcloud-test::default' do
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config_new)
         end
 
-
         describe 'included recipes' do
           %w(
             osl-apache
@@ -75,7 +74,6 @@ describe 'nextcloud-test::default' do
         it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com') }
         it { expect(chef_run).to_not run_execute('occ-nextcloud') }
       end
-
     end
   end
 end

@@ -30,9 +30,9 @@ shared_context 'common_stubs' do
     stub_command('php occ | grep maintenance:install').and_return(true)
     # This needs to include an error method somehow
     # NoMethodError: u...ed method `error!' for {"system"=>{"trusted_domains"=>["localhost", "nextcloud.example.com"]}}:Hash>
-    stubs_for_provider("osl_nextcloud[test]") do |provider|
-      allow(provider).to receive_shell_out("php occ config:list", {:cwd=>"/usr/share/nextcloud/", :user=>"apache", :group=>"apache"}).and_return(
-        "system" => {'trusted_domains' => ['localhost', 'nextcloud.example.com']}
+    stubs_for_provider('osl_nextcloud[test]') do |provider|
+      allow(provider).to receive_shell_out('php occ config:list', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
+        'system' => { 'trusted_domains' => ['localhost', 'nextcloud.example.com'] }
       )
     end
   end
