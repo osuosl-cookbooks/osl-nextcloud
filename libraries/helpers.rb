@@ -1,4 +1,4 @@
-module OslNextcloud
+module OSLNextcloud
   module Cookbook
     module Helpers
       require 'json'
@@ -22,5 +22,5 @@ module OslNextcloud
     end
   end
 end
-Chef::DSL::Recipe.include ::OslNextcloud::Cookbook::Helpers
-Chef::Resource.include ::OslNextcloud::Cookbook::Helpers
+Chef::DSL::Recipe.include ::OSLNextcloud::Cookbook::Helpers
+Chef::Resource.include ::OSLNextcloud::Cookbook::Helpers

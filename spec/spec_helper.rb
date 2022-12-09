@@ -26,6 +26,5 @@ shared_context 'common_stubs' do
     )
     stub_command("mysqladmin --user=root --password='' version").and_return(true)
     stub_command('php occ | grep maintenance:install').and_return(true)
-    stub_command('php occ config:list').and_return(true)
   end
 end
