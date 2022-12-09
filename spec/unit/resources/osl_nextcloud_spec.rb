@@ -8,8 +8,6 @@ describe 'nextcloud-test::default' do
           platform.dup.merge(step_into: ['osl_nextcloud'])
         )
       end
-      let(:node) { runner.node }
-      cached(:chef_run) { runner.converge(described_recipe) }
 
       include_context 'common_stubs'
 
@@ -19,14 +17,16 @@ describe 'nextcloud-test::default' do
       occ_config_new = '{"system": { "trusted_domains": [ "localhost" ] }}'
       occ_config_new = JSON.parse(occ_config_new)
 
-      it 'converges successfully' do
-        expect { chef_run }.to_not raise_error
-      end
-
       context 'nextcloud not installed' do
         before do
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(true)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config_new)
+        end
+
+        let(:node) { runner.node }
+        cached(:chef_run) { runner.converge(described_recipe) }
+        it 'converges successfully' do
+          expect { chef_run }.to_not raise_error
         end
 
         describe 'included recipes' do
@@ -70,6 +70,8 @@ describe 'nextcloud-test::default' do
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
         end
+        let(:node) { runner.node }
+        cached(:chef_run) { runner.converge(described_recipe) }
         it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
         it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com') }
         it { expect(chef_run).to_not run_execute('occ-nextcloud') }
