@@ -1,6 +1,8 @@
 require 'chefspec'
 require 'chefspec/berkshelf'
 
+Dir['libraries/*.rb'].each { |f| require File.expand_path(f) }
+
 CENTOS_8 = {
   platform: 'centos',
   version: '8',
@@ -26,5 +28,12 @@ shared_context 'common_stubs' do
     )
     stub_command("mysqladmin --user=root --password='' version").and_return(true)
     stub_command('php occ | grep maintenance:install').and_return(true)
+    # This needs to include an error method somehow
+    # NoMethodError: u...ed method `error!' for {"system"=>{"trusted_domains"=>["localhost", "nextcloud.example.com"]}}:Hash>
+    stubs_for_provider("osl_nextcloud[test]") do |provider|
+      allow(provider).to receive_shell_out("php occ config:list", {:cwd=>"/usr/share/nextcloud/", :user=>"apache", :group=>"apache"}).and_return(
+        "system" => {'trusted_domains' => ['localhost', 'nextcloud.example.com']}
+      )
+    end
   end
 end

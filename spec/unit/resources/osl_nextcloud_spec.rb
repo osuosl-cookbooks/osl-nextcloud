@@ -19,60 +19,61 @@ describe 'nextcloud-test::default' do
       occ_config_new = '{"system": { "trusted_domains": [ "localhost" ] }}'
       occ_config_new = JSON.parse(occ_config_new)
 
-
       it 'converges successfully' do
         expect { chef_run }.to_not raise_error
       end
 
-      describe 'included recipes' do
-        %w(
-          osl-apache
-          osl-apache::mod_php
-          osl-git
-          osl-php
-          osl-repos::epel
-        ).each do |r|
-          it do
-            expect(chef_run).to include_recipe(r)
-          end
-        end
-      end
-
-      it { expect(chef_run).to install_package(%w(nextcloud redis)) }
-
-      it { expect(chef_run).to create_directory('/etc/httpd/nextcloud') }
-
-      %w(
-        /etc/httpd/nextcloud/nextcloud-access.conf.avail
-        /etc/httpd/nextcloud/nextcloud-auth-any.inc
-        /etc/httpd/nextcloud/nextcloud-auth-local.inc
-        /etc/httpd/nextcloud/nextcloud-auth-none.inc
-        /etc/httpd/nextcloud/nextcloud-defaults.inc
-      ).each do |f|
-        it { expect(chef_run).to create_cookbook_file(f) }
-      end
-
-      it { expect(chef_run).to enable_service('redis') }
-      it { expect(chef_run).to start_service('redis') }
-
       context 'nextcloud not installed' do
         before do
-          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(true)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config_new)
         end
+
+
+        describe 'included recipes' do
+          %w(
+            osl-apache
+            osl-apache::mod_php
+            osl-git
+            osl-php
+            osl-repos::epel
+          ).each do |r|
+            it do
+              expect(chef_run).to include_recipe(r)
+            end
+          end
+        end
+
+        it { expect(chef_run).to install_package(%w(nextcloud redis)) }
+
+        it { expect(chef_run).to create_directory('/etc/httpd/nextcloud') }
+
+        %w(
+          /etc/httpd/nextcloud/nextcloud-access.conf.avail
+          /etc/httpd/nextcloud/nextcloud-auth-any.inc
+          /etc/httpd/nextcloud/nextcloud-auth-local.inc
+          /etc/httpd/nextcloud/nextcloud-auth-none.inc
+          /etc/httpd/nextcloud/nextcloud-defaults.inc
+        ).each do |f|
+          it { expect(chef_run).to create_cookbook_file(f) }
+        end
+
+        it { expect(chef_run).to enable_service('redis') }
+        it { expect(chef_run).to start_service('redis') }
+
         it { expect(chef_run).to run_execute('occ-nextcloud').with(user: 'apache') }
-        it { expect(chef_run).to_not run_execute('trusted-domains-localhost').with(user: 'apache') }
+        it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
         it { expect(chef_run).to run_execute('trusted-domains-nextcloud.example.com').with(user: 'apache') }
       end
 
       context 'nextcloud installed' do
         before do
-          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(true)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
         end
-        it { expect(chef_run).to_not run_execute('trusted-domains-localhost').with(user: 'apache') }
-        it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com').with(user: 'apache') }
-        it { expect(chef_run).to_not run_execute('occ-nextcloud').with(user: 'apache') }
+        it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
+        it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com') }
+        it { expect(chef_run).to_not run_execute('occ-nextcloud') }
       end
 
     end
