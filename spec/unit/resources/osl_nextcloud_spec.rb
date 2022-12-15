@@ -25,6 +25,7 @@ describe 'nextcloud-test::default' do
 
         let(:node) { runner.node }
         cached(:chef_run) { runner.converge(described_recipe) }
+
         it 'converges successfully' do
           expect { chef_run }.to_not raise_error
         end

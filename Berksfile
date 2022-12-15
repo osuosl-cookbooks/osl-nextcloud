@@ -2,7 +2,7 @@ source 'https://supermarket.chef.io'
 
 solver :ruby, :required
 
-cookbook 'osl-apache', git: 'git@github.com:osuosl-cookbooks/osl-apache.git', branch: 'libphp8-helper-fix'
+cookbook 'osl-apache', git: 'git@github.com:osuosl-cookbooks/osl-apache.git'
 cookbook 'osl-firewall', git: 'git@github.com:osuosl-cookbooks/osl-firewall'
 cookbook 'osl-git', git: 'git@github.com:osuosl-cookbooks/osl-git.git'
 cookbook 'osl-mysql', git: 'git@github.com:osuosl-cookbooks/osl-mysql.git'
