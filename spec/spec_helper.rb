@@ -34,7 +34,7 @@ shared_context 'common_stubs' do
     end
     stubs_for_resource('execute[occ-nextcloud]') do |resource|
       allow(resource).to receive_shell_out('php occ | grep maintenance:install', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
-        double(exitstatus: 0)
+        double(exitstatus: 1)
       )
     end
   end

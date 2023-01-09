@@ -14,13 +14,18 @@ describe 'nextcloud-test::default' do
       occ_config = '{"system": { "trusted_domains": [ "localhost", "nextcloud.example.com" ] }}'
       occ_config = JSON.parse(occ_config)
 
-      occ_config_new = '{"system": { "trusted_domains": [ "localhost" ] }}'
-      occ_config_new = JSON.parse(occ_config_new)
-
       context 'nextcloud not installed' do
         before do
-          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(true)
-          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config_new)
+          stubs_for_provider('osl_nextcloud[test]') do |provider|
+            allow(provider).to receive_shell_out('php occ config:list', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
+              double(stdout: '{"system": {"trusted_domains": ["localhost"]}}', exitstatus: 0)
+            )
+          end
+          stubs_for_resource('execute[occ-nextcloud]') do |resource|
+            allow(resource).to receive_shell_out('php occ | grep maintenance:install', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
+              double(exitstatus: 0)
+            )
+          end
         end
 
         let(:node) { runner.node }
