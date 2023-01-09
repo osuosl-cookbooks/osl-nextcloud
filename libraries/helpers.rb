@@ -12,7 +12,7 @@ module OSLNextcloud
 
       # Return parsed output of current Nextcloud configuration
       def osl_nextcloud_config
-        cmd = shell_out!('php occ config:list', cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache')
+        cmd = shell_out('php occ config:list', cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache')
         if cmd.exitstatus != 0
           Chef::Log.fatal('Failed executing: php occ config:list')
           Chef::Log.fatal(cmd.stderr)

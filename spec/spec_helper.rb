@@ -27,12 +27,14 @@ shared_context 'common_stubs' do
       'db_dbname' => 'nextcloud'
     )
     stub_command("mysqladmin --user=root --password='' version").and_return(true)
-    stub_command('php occ | grep maintenance:install').and_return(true)
-    # This needs to include an error method somehow
-    # NoMethodError: u...ed method `error!' for {"system"=>{"trusted_domains"=>["localhost", "nextcloud.example.com"]}}:Hash>
+    # stub_command('php occ | grep maintenance:install').and_return(true)
+    # allow_any_instance_of ( can_install?).to return(true)
     stubs_for_provider('osl_nextcloud[test]') do |provider|
+      allow(provider).to receive_shell_out('php occ | grep maintenance:install', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
+        double(stdout: '{"system": {"trusted_domains": ["localhost", "nextcloud.example.com"]}}', exitstatus: 0)
+      )
       allow(provider).to receive_shell_out('php occ config:list', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
-        'system' => { 'trusted_domains' => ['localhost', 'nextcloud.example.com'] }
+        double(stdout: '{"system": {"trusted_domains": ["localhost", "nextcloud.example.com"]}}', exitstatus: 0)
       )
     end
   end
