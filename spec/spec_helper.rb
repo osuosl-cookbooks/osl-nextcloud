@@ -29,7 +29,7 @@ shared_context 'common_stubs' do
     stub_command("mysqladmin --user=root --password='' version").and_return(true)
     stubs_for_provider('osl_nextcloud[test]') do |provider|
       allow(provider).to receive_shell_out('php occ config:list', { cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache' }).and_return(
-        double(stdout: '{"system": {"trusted_domains": ["localhost", "nextcloud.example.com"]}}', exitstatus: 0)
+        double(stdout: '{"system": {"trusted_domains": ["localhost"]}}', exitstatus: 0)
       )
     end
     stubs_for_resource('execute[occ-nextcloud]') do |resource|
