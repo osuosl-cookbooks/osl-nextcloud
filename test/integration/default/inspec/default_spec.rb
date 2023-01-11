@@ -32,6 +32,11 @@ control 'osl_nextcloud' do
     its('stdout') { should match /versionstring: 23.0.7/ }
   end
 
+  describe http('http://localhost') do
+    its('status') { should eq 200 }
+    its('headers.Content-Type') { should match 'text/html' }
+  end
+
   describe http('http://localhost',
                 headers: { 'host' => 'nextcloud.example.com' }) do
     its('status') { should eq 200 }
