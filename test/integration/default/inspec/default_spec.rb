@@ -1,6 +1,17 @@
 # InSpec test for recipe osl-nextcloud::default
 
 control 'osl_nextcloud' do
+  describe file('/etc/php.ini') do
+    [
+      /^memory_limit=512M$/,
+      /^post_max_size=65M$/,
+      /^upload_max_filesize=60M$/,
+      /^output_buffering=false$/,
+    ].each do |conf|
+      its('content') { should match(conf) }
+    end
+  end
+
   describe package 'nextcloud' do
     it { should be_installed }
   end

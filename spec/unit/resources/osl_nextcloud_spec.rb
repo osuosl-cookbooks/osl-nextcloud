@@ -35,6 +35,17 @@ describe 'nextcloud-test::default' do
           expect { chef_run }.to_not raise_error
         end
 
+        it do
+          expect(chef_run).to create_template('/etc/php.ini').with(
+            variables: {
+              directives: { 'post_max_size' => '65M',
+                            'memory_limit' => '512M',
+                            'upload_max_filesize' => '60M',
+                            'output_buffering' => false },
+            }
+          )
+        end
+
         describe 'included recipes' do
           %w(
             osl-apache

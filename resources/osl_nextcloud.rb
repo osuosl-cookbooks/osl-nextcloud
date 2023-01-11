@@ -28,7 +28,12 @@ action :create do
     pecl-imagick
     zip
   )
-  node.default['php']['directives']['memory_limit'] = '512M'
+  node.default['php']['directives'] = {
+    'memory_limit' => '512M',
+    'post_max_size' => '65M',
+    'upload_max_filesize' => '60M',
+    'output_buffering' => false,
+  }
   node.default['php']['fpm_package'] = 'php80u-fpm'
   node.default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
   node.default['osl-apache']['behind_loadbalancer'] = true
