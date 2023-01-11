@@ -4,7 +4,6 @@ solver :ruby, :required
 
 cookbook 'osl-apache', git: 'git@github.com:osuosl-cookbooks/osl-apache.git'
 cookbook 'osl-firewall', git: 'git@github.com:osuosl-cookbooks/osl-firewall'
-cookbook 'osl-git', git: 'git@github.com:osuosl-cookbooks/osl-git.git'
 cookbook 'osl-mysql', git: 'git@github.com:osuosl-cookbooks/osl-mysql.git'
 cookbook 'osl-nrpe', git: 'git@github.com:osuosl-cookbooks/osl-nrpe.git'
 cookbook 'osl-php', git: 'git@github.com:osuosl-cookbooks/osl-php.git'

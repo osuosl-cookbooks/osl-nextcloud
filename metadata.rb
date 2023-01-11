@@ -10,7 +10,6 @@ version           '0.1.0'
 
 depends          'ark'
 depends          'osl-apache'
-depends          'osl-git'
 depends          'osl-php'
 
 supports 'centos_stream', '~> 8.0'

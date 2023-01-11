@@ -56,7 +56,6 @@ describe 'nextcloud-test::default' do
           %w(
             osl-apache
             osl-apache::mod_php
-            osl-git
             osl-php
             osl-repos::epel
           ).each do |r|

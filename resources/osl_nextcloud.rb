@@ -43,7 +43,6 @@ action :create do
 
   include_recipe 'osl-apache'
   include_recipe 'osl-apache::mod_php'
-  include_recipe 'osl-git'
   include_recipe 'osl-php'
   include_recipe 'osl-repos::epel'
 
