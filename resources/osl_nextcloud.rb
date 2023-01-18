@@ -10,6 +10,7 @@ property :nextcloud_admin_user, String, sensitive: true, required: true
 property :server_name, String, name_property: true
 property :server_aliases, Array, default: %w(localhost)
 property :version, String, required: true
+property :redis_vals, Hash, default: { 'host' => '127.0.0.1', 'port' => '6379' }
 
 default_action :create
 
@@ -102,7 +103,22 @@ action :create do
       cwd '/usr/share/nextcloud'
       user 'apache'
       command "php occ config:system:set trusted_domains #{new_resource.server_aliases.find_index(domain)} --value=#{domain}"
-      not_if { cur_trusted_domains.include?(domain) }
+        not_if { cur_trusted_domains.include?(domain) }
+    end
+  end
+  execute 'redis-cache' do
+    cwd '/usr/share/nextcloud'
+    user 'apache'
+    command "php occ config:system:set memcache.distributed --value='\\OC\\Memcache\\Redis'"
+  end
+
+  redis_config = osl_nextcloud_config['system']['redis']
+  new_resource.redis_vals.each do |name, value|
+    execute "redis-#{name}" do
+      cwd '/usr/share/nextcloud'
+      user 'apache'
+      command "php occ config:system:set redis #{name} --value=#{value}"
+      not_if { redis_config }
     end
   end
 end

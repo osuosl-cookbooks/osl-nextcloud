@@ -11,7 +11,13 @@ describe 'nextcloud-test::default' do
 
       include_context 'common_stubs'
 
-      occ_config = '{"system": { "trusted_domains": [ "localhost", "nextcloud.example.com" ] }}'
+      occ_config = '{"system": { 
+                      "trusted_domains": [ "localhost", "nextcloud.example.com" ],
+                      "redis": {
+                        "host": "***REMOVED SENSITIVE VALUE***",
+                        "port": "6379" 
+                      }
+                    }}'
       occ_config = JSON.parse(occ_config)
 
       context 'nextcloud not installed' do
@@ -80,6 +86,8 @@ describe 'nextcloud-test::default' do
         it { expect(chef_run).to run_execute('occ-nextcloud').with(user: 'apache') }
         it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
         it { expect(chef_run).to run_execute('trusted-domains-nextcloud.example.com').with(user: 'apache') }
+        it { expect(chef_run).to run_execute('redis-host') }
+        it { expect(chef_run).to run_execute('redis-port') }
       end
 
       context 'nextcloud installed' do
@@ -92,6 +100,8 @@ describe 'nextcloud-test::default' do
         it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
         it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com') }
         it { expect(chef_run).to_not run_execute('occ-nextcloud') }
+        it { expect(chef_run).to_not run_execute('redis-host') }
+        it { expect(chef_run).to_not run_execute('redis-port') }
       end
     end
   end
