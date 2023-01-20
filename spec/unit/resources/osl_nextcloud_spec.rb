@@ -11,11 +11,11 @@ describe 'nextcloud-test::default' do
 
       include_context 'common_stubs'
 
-      occ_config = '{"system": { 
+      occ_config = '{"system": {
                       "trusted_domains": [ "localhost", "nextcloud.example.com" ],
                       "redis": {
                         "host": "***REMOVED SENSITIVE VALUE***",
-                        "port": "6379" 
+                        "port": "6379"
                       }
                     }}'
       occ_config = JSON.parse(occ_config)

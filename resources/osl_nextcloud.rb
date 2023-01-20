@@ -102,7 +102,7 @@ action :create do
       cwd '/usr/share/nextcloud'
       user 'apache'
       command "php occ config:system:set trusted_domains #{new_resource.server_aliases.find_index(domain)} --value=#{domain}"
-        not_if { cur_trusted_domains.include?(domain) }
+      not_if { cur_trusted_domains.include?(domain) }
     end
   end
   execute 'redis-cache' do
