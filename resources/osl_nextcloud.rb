@@ -95,8 +95,12 @@ action :create do
     only_if { can_install? }
   end
 
-  cur_trusted_domains = osl_nextcloud_config['system']['trusted_domains']
+  # Call this once
+  nc_config = osl_nextcloud_config
+
+  cur_trusted_domains = nc_config['system']['trusted_domains']
   new_trusted_domains = [new_resource.server_name, new_resource.server_aliases].flatten!.sort
+
   new_trusted_domains.each do |domain|
     execute "trusted-domains-#{domain}" do
       cwd '/usr/share/nextcloud'
@@ -105,19 +109,20 @@ action :create do
       not_if { cur_trusted_domains.include?(domain) }
     end
   end
+
   execute 'redis-cache' do
     cwd '/usr/share/nextcloud'
     user 'apache'
     command "php occ config:system:set memcache.distributed --value='\\OC\\Memcache\\Redis'"
+    not_if { nc_config['system']['memcache.distributed'] == '\\OC\\Memcache\\Redis' }
   end
 
-  redis_config = osl_nextcloud_config['system']['redis']
   new_resource.redis_vals.each do |name, value|
     execute "redis-#{name}" do
       cwd '/usr/share/nextcloud'
       user 'apache'
       command "php occ config:system:set redis #{name} --value=#{value}"
-      not_if { redis_config }
+      not_if { nc_config['system']['redis'] }
     end
   end
 end
