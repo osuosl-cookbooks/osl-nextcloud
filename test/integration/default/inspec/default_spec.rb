@@ -15,12 +15,15 @@ control 'osl_nextcloud' do
   describe package 'nextcloud' do
     it { should be_installed }
   end
+
   describe package 'redis' do
     it { should be_installed }
   end
+
   describe service 'redis' do
     it { should be_running }
   end
+
   describe service 'httpd' do
     it { should be_enabled }
     it { should be_running }
@@ -42,10 +45,16 @@ control 'osl_nextcloud' do
     its('stdout') { should match /installed: true/ }
     its('stdout') { should match /versionstring: 23.0.7/ }
   end
-  describe command('sudo -u apache php /usr/share/nextcloud/occ config:list') do
+
+  describe command('sudo -u apache php /usr/share/nextcloud/occ config:system:get installed') do
     its('exit_status') { should eq 0 }
-    its('stdout') { should match /installed: true/ }
-    its('stdout') { should match /redis((.|\n)*)"port": 6379/ }
+    its('stdout') { should match /^true$/ }
+  end
+
+  describe command('sudo -u apache php /usr/share/nextcloud/occ config:system:get redis') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match /^host: 127.0.0.1$/ }
+    its('stdout') { should match /^port: 6379$/ }
   end
 
   describe http('http://localhost') do
@@ -53,8 +62,7 @@ control 'osl_nextcloud' do
     its('headers.Content-Type') { should match 'text/html' }
   end
 
-  describe http('http://localhost',
-                headers: { 'host' => 'nextcloud.example.com' }) do
+  describe http('http://localhost', headers: { 'host' => 'nextcloud.example.com' }) do
     its('status') { should eq 200 }
     its('headers.Content-Type') { should match 'text/html' }
   end
