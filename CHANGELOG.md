@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+1.1.0 (2023-02-24)
+------------------
+- Added sensitive property
+
 1.0.0 (2023-02-21)
 ------------------
 - Initial nextcloud resource

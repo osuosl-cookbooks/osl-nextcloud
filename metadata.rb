@@ -6,7 +6,7 @@ description       'Installs/Configures osl-nextcloud'
 issues_url        'https://github.com/osuosl-cookbooks/osl-nextcloud/issues'
 source_url        'https://github.com/osuosl-cookbooks/osl-nextcloud'
 chef_version      '>= 16.0'
-version           '1.0.0'
+version           '1.1.0'
 
 depends          'osl-apache'
 depends          'osl-php'
