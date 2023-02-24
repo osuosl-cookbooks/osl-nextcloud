@@ -11,6 +11,7 @@ property :server_name, String, name_property: true
 property :server_aliases, Array, default: %w(localhost)
 property :version, String, required: true
 property :redis_vals, Hash, default: { 'host' => '127.0.0.1', 'port' => '6379' }
+property :sensitive, [true, false], default: true
 
 default_action :create
 
@@ -91,7 +92,7 @@ action :create do
       --database-pass #{new_resource.database_password} \
       --admin-user #{new_resource.nextcloud_admin_user} \
       --admin-pass #{new_resource.nextcloud_admin_password}"
-    sensitive true
+    sensitive new_resource.sensitive
     only_if { can_install? }
   end
 
