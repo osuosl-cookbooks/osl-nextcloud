@@ -39,8 +39,6 @@ action :create do
   node.default['apache']['mod_fastcgi']['package'] = 'mod_fcgid'
   node.default['osl-apache']['behind_loadbalancer'] = true
 
-  ::Chef::Resource.include Apache2::Cookbook::Helpers
-
   include_recipe 'osl-apache'
   include_recipe 'osl-apache::mod_php'
   include_recipe 'osl-php'
