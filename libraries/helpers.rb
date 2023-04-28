@@ -2,17 +2,36 @@ module OSLNextcloud
   module Cookbook
     module Helpers
       require 'json'
+      require 'uri'
+      require 'open-uri'
+
+      # Get sha256sum from nextcloud website
+      def osl_nextcloud_checksum(version)
+        download_url = 'https://download.nextcloud.com/server/releases'
+        checksums = URI.open("#{download_url}/nextcloud-#{version}.tar.bz2.sha256")
+        checksums.grep(/nextcloud-#{version}/)[0].split.first
+      end
 
       # Return true if Nextcloud has not yet been installed
       def can_install?
-        cmd = shell_out('php occ | grep maintenance:install', cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache')
+        cmd = shell_out(
+          'php occ | grep maintenance:install',
+          cwd: "/var/www/#{new_resource.server_name}/nextcloud",
+          user: 'apache',
+          group: 'apache'
+        )
         return true if cmd.exitstatus == 0
         false
       end
 
       # Return parsed output of current Nextcloud configuration
       def osl_nextcloud_config
-        cmd = shell_out('php occ config:list', cwd: '/usr/share/nextcloud/', user: 'apache', group: 'apache')
+        cmd = shell_out(
+          'php occ config:list --private',
+          cwd: "/var/www/#{new_resource.server_name}/nextcloud",
+          user: 'apache',
+          group: 'apache'
+        )
         if cmd.exitstatus != 0
           Chef::Log.fatal('Failed executing: php occ config:list')
           Chef::Log.fatal(cmd.stderr)

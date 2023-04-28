@@ -1,19 +1,24 @@
 # InSpec test for recipe osl-nextcloud::default
 
 control 'osl_nextcloud' do
-  describe file('/etc/php.ini') do
-    [
-      /^memory_limit=512M$/,
-      /^post_max_size=65M$/,
-      /^upload_max_filesize=60M$/,
-      /^output_buffering=false$/,
-    ].each do |conf|
-      its('content') { should match(conf) }
-    end
+  describe php_config 'apc.enable_cli' do
+    its('value') { should eq 1 }
   end
 
-  describe package 'nextcloud' do
-    it { should be_installed }
+  describe php_config 'memory_limit' do
+    its('value') { should eq '512M' }
+  end
+
+  describe php_config 'output_buffering' do
+    its('value') { should eq 0 }
+  end
+
+  describe php_config 'post_max_size' do
+    its('value') { should eq '1G' }
+  end
+
+  describe php_config 'upload_max_filesize' do
+    its('value') { should eq '1G' }
   end
 
   describe package 'redis' do
@@ -29,8 +34,28 @@ control 'osl_nextcloud' do
     it { should be_running }
   end
 
-  describe directory '/usr/share/nextcloud/data' do
+  describe directory '/var/www/nextcloud.example.com/data' do
     it { should exist }
+    its('owner') { should eq 'apache' }
+    its('group') { should eq 'apache' }
+  end
+
+  describe directory '/var/www/nextcloud.example.com/nextcloud/apps' do
+    it { should exist }
+    its('owner') { should eq 'apache' }
+    its('group') { should eq 'apache' }
+  end
+
+  describe file '/var/www/nextcloud.example.com/nextcloud/config/config.php' do
+    it { should exist }
+    its('mode') { should cmp '0640' }
+    its('owner') { should eq 'apache' }
+    its('group') { should eq 'apache' }
+  end
+
+  describe file '/var/www/nextcloud.example.com/config.php' do
+    it { should exist }
+    its('mode') { should cmp '0640' }
     its('owner') { should eq 'apache' }
     its('group') { should eq 'apache' }
   end
@@ -40,18 +65,22 @@ control 'osl_nextcloud' do
     it { should be_resolvable }
   end
 
-  describe command('sudo -u apache php /usr/share/nextcloud/occ status') do
+  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ status') do
     its('exit_status') { should eq 0 }
     its('stdout') { should match /installed: true/ }
-    its('stdout') { should match /versionstring: 23.0.7/ }
+    its('stdout') { should match /versionstring: 26.0.1/ }
   end
 
-  describe command('sudo -u apache php /usr/share/nextcloud/occ config:system:get installed') do
+  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ check') do
+    its('exit_status') { should eq 0 }
+  end
+
+  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ config:system:get installed') do
     its('exit_status') { should eq 0 }
     its('stdout') { should match /^true$/ }
   end
 
-  describe command('sudo -u apache php /usr/share/nextcloud/occ config:system:get redis') do
+  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ config:system:get redis') do
     its('exit_status') { should eq 0 }
     its('stdout') { should match /^host: 127.0.0.1$/ }
     its('stdout') { should match /^port: 6379$/ }
@@ -63,7 +92,8 @@ control 'osl_nextcloud' do
   end
 
   describe http('http://localhost', headers: { 'host' => 'nextcloud.example.com' }) do
-    its('status') { should eq 200 }
+    its('status') { should eq 302 }
     its('headers.Content-Type') { should match 'text/html' }
+    its('headers.Location') { should match 'http://nextcloud.example.com/index.php/login' }
   end
 end

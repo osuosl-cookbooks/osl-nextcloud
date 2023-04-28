@@ -43,7 +43,6 @@ service 'apache2' do
 end
 
 osl_nextcloud 'test' do
-  version '23'
   server_name 'nextcloud.example.com'
   database_host 'localhost'
   database_name 'nextcloud'
@@ -51,5 +50,6 @@ osl_nextcloud 'test' do
   database_password 'nextcloud'
   nextcloud_admin_user 'admin'
   nextcloud_admin_password 'unguessable'
+  mail_domain 'example.com'
   server_aliases %w(localhost nextcloud.example.com)
 end
