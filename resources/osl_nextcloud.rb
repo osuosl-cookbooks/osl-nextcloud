@@ -8,7 +8,7 @@ property :database_name, String, required: true
 property :database_password, String, sensitive: true, required: true
 property :database_user, String, sensitive: true, required: true
 property :nextcloud_admin_password, String, sensitive: true, required: true
-property :nextcloud_admin_user, String, sensitive: true, required: true
+property :nextcloud_admin_user, String, default: 'admin'
 property :mail_smtphost, String, default: 'smtp.osuosl.org'
 property :mail_from_address, String, default: 'noreply'
 property :mail_domain, String, required: true
@@ -36,9 +36,11 @@ action :create do
     zip
   )
   node.default['osl-apache']['mpm'] = 'event'
+  node.default['osl-apache']['behind_loadbalancer'] = true
 
   include_recipe 'osl-selinux'
   include_recipe 'osl-apache'
+  include_recipe 'osl-apache::mod_remoteip'
   include_recipe 'osl-php'
   include_recipe 'osl-repos::epel'
 

@@ -77,6 +77,7 @@ describe 'nextcloud-test::default' do
         describe 'included recipes' do
           %w(
             osl-apache
+            osl-apache::mod_remoteip
             osl-php
             osl-repos::epel
             osl-selinux

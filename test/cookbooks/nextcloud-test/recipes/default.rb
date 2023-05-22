@@ -48,7 +48,6 @@ osl_nextcloud 'test' do
   database_name 'nextcloud'
   database_user 'nextcloud'
   database_password 'nextcloud'
-  nextcloud_admin_user 'admin'
   nextcloud_admin_password 'unguessable'
   mail_domain 'example.com'
   server_aliases %w(localhost nextcloud.example.com)
