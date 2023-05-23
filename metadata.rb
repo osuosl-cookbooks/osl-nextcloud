@@ -8,8 +8,10 @@ source_url        'https://github.com/osuosl-cookbooks/osl-nextcloud'
 chef_version      '>= 16.0'
 version           '1.1.0'
 
+depends          'ark'
 depends          'osl-apache'
 depends          'osl-php'
 depends          'osl-repos'
+depends          'osl-selinux'
 
-supports 'centos_stream', '~> 8.0'
+supports 'almalinux', '~> 8.0'
