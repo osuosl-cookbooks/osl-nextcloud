@@ -60,8 +60,15 @@ action :create do
     )
   end
 
+  # Current size is 52MB
+  fpm_settings = osl_php_fpm_settings(52)
+
   php_fpm_pool 'nextcloud' do
     listen '/var/run/nextcloud-fpm.sock'
+    max_children fpm_settings['max_children']
+    start_servers fpm_settings['start_servers']
+    min_spare_servers fpm_settings['min_spare_servers']
+    max_spare_servers fpm_settings['max_spare_servers']
   end
 
   nextcloud_dir = "/var/www/#{new_resource.server_name}"
@@ -231,7 +238,7 @@ action :create do
     execute "nextcloud-config: trusted-domains-#{domain}" do
       cwd nextcloud_webroot
       user 'apache'
-      command "php occ config:system:set trusted_domains #{new_resource.server_aliases.find_index(domain)} --value=#{domain}"
+      command "php occ config:system:set trusted_domains #{new_trusted_domains.find_index(domain)} --value=#{domain}"
       not_if { cur_trusted_domains.include?(domain) }
     end
   end

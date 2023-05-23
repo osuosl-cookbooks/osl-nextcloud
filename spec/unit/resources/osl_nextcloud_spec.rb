@@ -105,7 +105,15 @@ describe 'nextcloud-test::default' do
           )
         end
 
-        it { expect(chef_run).to install_php_fpm_pool('nextcloud').with(listen: '/var/run/nextcloud-fpm.sock') }
+        it do
+          expect(chef_run).to install_php_fpm_pool('nextcloud').with(
+            listen: '/var/run/nextcloud-fpm.sock',
+            max_children: 4,
+            start_servers: 1,
+            min_spare_servers: 1,
+            max_spare_servers: 3
+          )
+        end
 
         it do
           expect(chef_run).to manage_selinux_fcontext("#{nc_d}(/.*)?").with(secontext: 'httpd_sys_rw_content_t')

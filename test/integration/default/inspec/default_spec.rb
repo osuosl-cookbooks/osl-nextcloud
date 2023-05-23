@@ -86,6 +86,13 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^port: 6379$/ }
   end
 
+  describe file('/etc/php-fpm.d/nextcloud.conf') do
+    its('content') { should match /^pm.max_children = 44$/ }
+    its('content') { should match /^pm.start_servers = 11$/ }
+    its('content') { should match /^pm.min_spare_servers = 11$/ }
+    its('content') { should match /^pm.max_spare_servers = 33$/ }
+  end
+
   describe http('http://localhost') do
     its('status') { should eq 200 }
     its('headers.Content-Type') { should match 'text/html' }
