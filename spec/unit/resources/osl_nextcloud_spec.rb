@@ -9,12 +9,12 @@ describe 'nextcloud-test::default' do
         )
       end
 
-      include_context 'common_stubs'
-
+      nc_version = '26.0.1'
+      nc_checksum = '6f9c6a1248d7c8af4ad473d73a42565f6adabad4531c5cfa57bc3497b2b64f48'
       nc = '/var/www/nextcloud.example.com'
       nc_d = "#{nc}/data"
       nc_wr = "#{nc}/nextcloud"
-      nc_v = "#{nc}/nextcloud-26.0.1"
+      nc_v = "#{nc}/nextcloud-#{nc_version}"
 
       occ_config =
         '{
@@ -39,7 +39,7 @@ describe 'nextcloud-test::default' do
 
       context 'nextcloud not installed' do
         before do
-          stubs_for_provider('osl_nextcloud[test]') do |provider|
+          stubs_for_provider('osl_nextcloud[nextcloud.example.com]') do |provider|
             allow(provider).to receive_shell_out(
               'php occ config:list --private',
               {
@@ -51,6 +51,7 @@ describe 'nextcloud-test::default' do
               double(stdout: '{"system": {"trusted_domains": ["localhost"]}}', exitstatus: 0)
             )
           end
+
           stubs_for_resource('execute[install-nextcloud]') do |resource|
             allow(resource).to receive_shell_out(
               'php occ | grep maintenance:install',
@@ -63,7 +64,8 @@ describe 'nextcloud-test::default' do
               double(exitstatus: 0)
             )
           end
-          content = StringIO.new '6f9c6a1248d7c8af4ad473d73a42565f6adabad4531c5cfa57bc3497b2b64f48  nextcloud-26.0.1.tar.bz2'
+
+          content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
         end
 
@@ -174,10 +176,10 @@ describe 'nextcloud-test::default' do
 
         it do
           expect(chef_run).to install_ark('nextcloud').with(
-            url: 'https://download.nextcloud.com/server/releases/nextcloud-26.0.1.tar.bz2',
+            url: "https://download.nextcloud.com/server/releases/nextcloud-#{nc_version}.tar.bz2",
             prefix_root: nc,
             prefix_home: nc,
-            checksum: '6f9c6a1248d7c8af4ad473d73a42565f6adabad4531c5cfa57bc3497b2b64f48'
+            checksum: nc_checksum
           )
         end
 
@@ -313,11 +315,13 @@ describe 'nextcloud-test::default' do
         before do
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
-          content = StringIO.new '6f9c6a1248d7c8af4ad473d73a42565f6adabad4531c5cfa57bc3497b2b64f48  nextcloud-26.0.1.tar.bz2'
+          content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
         end
+
         let(:node) { runner.node }
         cached(:chef_run) { runner.converge(described_recipe) }
+
         it { expect(chef_run).to_not run_execute('install-nextcloud') }
         it { expect(chef_run).to_not run_execute('upgrade-nextcloud') }
         it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
