@@ -11,7 +11,6 @@ provisioner:
   # - directory[/var/run/httpd] (osl_nextcloud)
   # - apache2_install[default_install] (osl_nextcloud)
   deprecations_as_errors: true
-  data_bags_path: test/integration/data_bags
 
 driver:
   flavor_ref: m1.medium

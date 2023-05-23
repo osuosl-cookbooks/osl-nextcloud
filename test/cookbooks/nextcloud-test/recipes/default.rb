@@ -16,34 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-node.override['percona']['version'] = '5.7'
-node.default['percona']['server']['root_password'] = 'nextcloud'
-node.default['percona']['backup']['password'] = 'nextcloud'
-
-dbcreds = data_bag_item('nextcloud', 'credentials')
-
-include_recipe 'osl-mysql::server'
-
-percona_mysql_database dbcreds['db_dbname'] do
-  password node['percona']['server']['root_password']
+osl_mysql_test 'nextcloud' do
+  username 'nextcloud'
+  password 'nextcloud'
 end
 
-percona_mysql_user dbcreds['db_user'] do
-  database_name dbcreds['db_dbname']
-  password dbcreds['db_passw']
-  host dbcreds['db_host']
-  ctrl_password node['percona']['server']['root_password']
-  action [:create, :grant]
-end
-
-service 'apache2' do
-  service_name lazy { apache_platform_service_name }
-  supports restart: true, status: true, reload: true, enable: true
-  action :nothing
-end
-
-osl_nextcloud 'test' do
-  server_name 'nextcloud.example.com'
+osl_nextcloud 'nextcloud.example.com' do
   database_host 'localhost'
   database_name 'nextcloud'
   database_user 'nextcloud'
