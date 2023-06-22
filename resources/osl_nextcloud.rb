@@ -190,6 +190,7 @@ action :create do
     group 'apache'
     command <<~EOC
       php occ maintenance:install --database 'mysql' \
+        --database-host #{new_resource.database_host} \
         --database-name #{new_resource.database_name} \
         --database-user #{new_resource.database_user} \
         --database-pass #{new_resource.database_password} \
