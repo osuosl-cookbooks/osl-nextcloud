@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.0.1 (2023-06-22)
+------------------
+- Actually use database_host parameter
+
 2.0.0 (2023-05-23)
 ------------------
 - Refactor to use tarball installation method
