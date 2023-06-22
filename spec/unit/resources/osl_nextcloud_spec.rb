@@ -230,7 +230,7 @@ describe 'nextcloud-test::default' do
             cwd: nc_wr,
             user: 'apache',
             group: 'apache',
-            command: "php occ maintenance:install --database 'mysql'   --database-name nextcloud   --database-user nextcloud   --database-pass nextcloud   --admin-user admin   --admin-pass unguessable   --data-dir /var/www/nextcloud.example.com/data\n",
+            command: "php occ maintenance:install --database 'mysql'   --database-host localhost   --database-name nextcloud   --database-user nextcloud   --database-pass nextcloud   --admin-user admin   --admin-pass unguessable   --data-dir /var/www/nextcloud.example.com/data\n",
             live_stream: true,
             sensitive: true
           )
