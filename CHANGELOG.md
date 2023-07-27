@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.0.2 (2023-07-27)
+------------------
+- Bump nextcloud to 26.0.4
+
 2.0.1 (2023-06-22)
 ------------------
 - Actually use database_host parameter
