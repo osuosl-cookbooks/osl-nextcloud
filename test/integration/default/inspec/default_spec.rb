@@ -68,7 +68,7 @@ control 'osl_nextcloud' do
   describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ status') do
     its('exit_status') { should eq 0 }
     its('stdout') { should match /installed: true/ }
-    its('stdout') { should match /versionstring: 26.0.4/ }
+    its('stdout') { should match /versionstring: 26.0.11/ }
   end
 
   describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ check') do
@@ -87,10 +87,10 @@ control 'osl_nextcloud' do
   end
 
   describe file('/etc/php-fpm.d/nextcloud.conf') do
-    its('content') { should match /^pm.max_children = 44$/ }
-    its('content') { should match /^pm.start_servers = 11$/ }
-    its('content') { should match /^pm.min_spare_servers = 11$/ }
-    its('content') { should match /^pm.max_spare_servers = 33$/ }
+    its('content') { should match /^pm.max_children = 43$/ }
+    its('content') { should match /^pm.start_servers = 10$/ }
+    its('content') { should match /^pm.min_spare_servers = 10$/ }
+    its('content') { should match /^pm.max_spare_servers = 32$/ }
   end
 
   describe http('http://localhost') do
