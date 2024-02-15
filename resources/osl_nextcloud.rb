@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '27.1.6'
+property :version, String, default: '28.0.2'
 property :checksum, String
 property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
