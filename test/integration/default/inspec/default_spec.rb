@@ -68,7 +68,7 @@ control 'osl_nextcloud' do
   describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ status') do
     its('exit_status') { should eq 0 }
     its('stdout') { should match /installed: true/ }
-    its('stdout') { should match /versionstring: 26.0.11/ }
+    its('stdout') { should match /versionstring: 27.1.6/ }
   end
 
   describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ check') do
