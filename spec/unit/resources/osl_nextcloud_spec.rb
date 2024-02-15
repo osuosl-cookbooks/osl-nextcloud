@@ -9,7 +9,7 @@ describe 'nextcloud-test::default' do
         )
       end
 
-      nc_version = '26.0.11'
+      nc_version = '27.1.6'
       nc_checksum = '801c9ae912cf6264be72c141e418d3d87d4e671c7a9dd643008f5d7d6991ea2e'
       nc = '/var/www/nextcloud.example.com'
       nc_d = "#{nc}/data"
