@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '28.0.2'
+property :version, String, default: '28'
 property :checksum, String
 property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
@@ -71,9 +71,10 @@ action :create do
     max_spare_servers fpm_settings['max_spare_servers']
   end
 
+  nextcloud_version = osl_nextcloud_latest_version(new_resource.version)
   nextcloud_dir = "/var/www/#{new_resource.server_name}"
   nextcloud_webroot = "#{nextcloud_dir}/nextcloud"
-  nextcloud_webroot_versioned = "#{nextcloud_dir}/nextcloud-#{new_resource.version}"
+  nextcloud_webroot_versioned = "#{nextcloud_dir}/nextcloud-#{nextcloud_version}"
   nextcloud_data = "#{nextcloud_dir}/data"
 
   selinux_fcontext "#{nextcloud_data}(/.*)?" do
@@ -133,11 +134,11 @@ action :create do
   package %w(tar bzip2)
 
   ark 'nextcloud' do
-    url "https://download.nextcloud.com/server/releases/nextcloud-#{new_resource.version}.tar.bz2"
+    url "https://download.nextcloud.com/server/releases/nextcloud-#{nextcloud_version}.tar.bz2"
     prefix_root nextcloud_dir
     prefix_home nextcloud_dir
-    version new_resource.version
-    checksum new_resource.checksum || osl_nextcloud_checksum(new_resource.version)
+    version nextcloud_version
+    checksum new_resource.checksum || osl_nextcloud_checksum(nextcloud_version)
     notifies :create, "remote_file[#{nextcloud_webroot}/config/config.php]", :immediately
     notifies :run, 'execute[fix-nextcloud-owner]', :immediately
     notifies :run, 'execute[disable-nextcloud-crontab]', :immediately
