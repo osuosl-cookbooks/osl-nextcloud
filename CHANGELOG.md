@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.1.0 (2024-03-12)
+------------------
+- Automatically install latest patch release
+
 2.0.5 (2024-02-15)
 ------------------
 - Bump nextcloud to 28.0.2
