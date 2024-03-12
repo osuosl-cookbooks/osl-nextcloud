@@ -9,12 +9,13 @@ describe 'nextcloud-test::default' do
         )
       end
 
-      nc_version = '28.0.2'
+      nc_version = '28.0.0'
       nc_checksum = '801c9ae912cf6264be72c141e418d3d87d4e671c7a9dd643008f5d7d6991ea2e'
       nc = '/var/www/nextcloud.example.com'
       nc_d = "#{nc}/data"
       nc_wr = "#{nc}/nextcloud"
       nc_v = "#{nc}/nextcloud-#{nc_version}"
+      github_releases = [{ name: 'v28.0.0' }, { name: 'v27.0.0' }]
 
       occ_config =
         '{
@@ -67,6 +68,7 @@ describe 'nextcloud-test::default' do
 
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
+          allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
         end
 
         let(:node) { runner.node }
@@ -317,6 +319,7 @@ describe 'nextcloud-test::default' do
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
+          allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
         end
 
         let(:node) { runner.node }

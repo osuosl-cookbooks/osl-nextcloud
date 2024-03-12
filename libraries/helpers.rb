@@ -2,8 +2,25 @@ module OSLNextcloud
   module Cookbook
     module Helpers
       require 'json'
-      require 'uri'
+      require 'net/http'
       require 'open-uri'
+      require 'uri'
+
+      # Get latest version of nextcloud from Github
+      def osl_nextcloud_latest_version(version)
+        releases = []
+        uri = URI('https://api.github.com/repos/nextcloud/server/releases')
+        response = JSON.parse(Net::HTTP.get(uri))
+        response.each do |rel|
+          # Match version given and exclude all release candidate and beta releases
+          if rel['name'].match?(/^v#{version}/) && !rel['name'].match?(/rc|beta/)
+            # Remove leading 'v' from name
+            releases << rel['name'][1..-1]
+          end
+        end
+        # First one should be latest
+        releases[0]
+      end
 
       # Get sha256sum from nextcloud website
       def osl_nextcloud_checksum(version)
