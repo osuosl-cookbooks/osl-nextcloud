@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.1.1 (2024-03-25)
+------------------
+- Restart php-fpm before upgrading
+
 2.1.0 (2024-03-12)
 ------------------
 - Automatically install latest patch release
