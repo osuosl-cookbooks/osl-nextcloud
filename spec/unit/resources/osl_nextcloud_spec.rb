@@ -192,6 +192,7 @@ describe 'nextcloud-test::default' do
 
         it { expect(chef_run.ark('nextcloud')).to notify('execute[fix-nextcloud-owner]').to(:run).immediately }
         it { expect(chef_run.ark('nextcloud')).to notify('execute[disable-nextcloud-crontab]').to(:run).immediately }
+        it { expect(chef_run.ark('nextcloud')).to notify('execute[systemctl restart php-fpm]').to(:run).immediately }
         it { expect(chef_run.ark('nextcloud')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
 
         it do
@@ -239,6 +240,7 @@ describe 'nextcloud-test::default' do
         end
 
         it { expect(chef_run).to nothing_execute('disable-nextcloud-crontab').with(command: 'crontab -u apache -r') }
+        it { is_expected.to nothing_execute 'systemctl restart php-fpm' }
 
         it do
           expect(chef_run).to nothing_execute('upgrade-nextcloud').with(

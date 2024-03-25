@@ -142,6 +142,7 @@ action :create do
     notifies :create, "remote_file[#{nextcloud_webroot}/config/config.php]", :immediately
     notifies :run, 'execute[fix-nextcloud-owner]', :immediately
     notifies :run, 'execute[disable-nextcloud-crontab]', :immediately
+    notifies :run, 'execute[systemctl restart php-fpm]', :immediately
     notifies :run, 'execute[upgrade-nextcloud]', :immediately
   end
 
@@ -216,6 +217,10 @@ action :create do
     command 'crontab -u apache -r'
     action :nothing
     only_if { nc_installed == true && ::File.exist?('/var/spool/cron/apache') }
+  end
+
+  execute 'systemctl restart php-fpm' do
+    action :nothing
   end
 
   # https://docs.nextcloud.com/server/latest/admin_manual/maintenance/upgrade.html
