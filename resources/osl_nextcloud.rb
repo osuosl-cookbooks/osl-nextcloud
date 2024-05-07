@@ -51,7 +51,7 @@ action :create do
     end
   end
 
-  php_ini 'nextcloud' do
+  osl_php_ini 'nextcloud' do
     options(
       'apc.enable_cli' => '1',
       'memory_limit' => '512M',

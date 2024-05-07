@@ -97,7 +97,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to add_php_ini('nextcloud').with(
+          expect(chef_run).to add_osl_php_ini('nextcloud').with(
             options: {
               'apc.enable_cli' => '1',
               'memory_limit' => '512M',
