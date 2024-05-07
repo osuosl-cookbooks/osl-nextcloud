@@ -20,28 +20,29 @@ property :max_filesize, String, default: '1G'
 default_action :create
 
 action :create do
-  node.default['php']['version'] = '8.1'
-  node.default['osl-php']['php_packages'] = %w(
-    bcmath
-    gd
-    gmp
-    intl
-    json
-    mbstring
-    mysqlnd
-    opcache
-    pecl-apcu
-    pecl-imagick
-    pecl-redis5
-    zip
-  )
   node.default['osl-apache']['mpm'] = 'event'
   node.default['osl-apache']['behind_loadbalancer'] = true
 
   include_recipe 'osl-selinux'
   include_recipe 'osl-apache'
   include_recipe 'osl-apache::mod_remoteip'
-  include_recipe 'osl-php'
+  osl_php_install 'osl-nextcloud' do
+    version '8.1'
+    php_packages %w(
+      bcmath
+      gd
+      gmp
+      intl
+      json
+      mbstring
+      mysqlnd
+      opcache
+      pecl-apcu
+      pecl-imagick
+      pecl-redis5
+      zip
+    )
+  end
   include_recipe 'osl-repos::epel'
 
   %w(proxy proxy_fcgi).each do |m|

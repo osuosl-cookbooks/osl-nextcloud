@@ -12,6 +12,7 @@ cookbook 'osl-repos', git: 'git@github.com:osuosl-cookbooks/osl-repos.git'
 cookbook 'osl-resources', git: 'git@github.com:osuosl-cookbooks/osl-resources', branch: 'main'
 cookbook 'osl-rsync', git: 'git@github.com:osuosl-cookbooks/osl-rsync.git'
 cookbook 'osl-selinux', git: 'git@github.com:osuosl-cookbooks/osl-selinux.git'
+cookbook 'php', git: 'git@github.com:ArtofBugs/php.git', branch: 'ArtofBugs/php-resources'
 
 cookbook 'nextcloud-test', path: 'test/cookbooks/nextcloud-test'
 

@@ -82,7 +82,6 @@ describe 'nextcloud-test::default' do
           %w(
             osl-apache
             osl-apache::mod_remoteip
-            osl-php
             osl-repos::epel
             osl-selinux
           ).each do |r|
