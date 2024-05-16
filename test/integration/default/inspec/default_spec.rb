@@ -1,8 +1,8 @@
 # InSpec test for recipe osl-nextcloud::default
 
 # Openstack, Vagrant, and Dokken all have different php configurations
-vagrant = inspec.command('test -e /home/vagrant').exit_status == 0
-docker = inspec.command('test -e /.dockerenv').exit_status == 0
+vagrant = inspec.file('/home/vagrant').exist?
+docker = inspec.file('/.dockerenv').exist?
 openstack = !vagrant and !docker
 
 control 'osl_nextcloud' do

@@ -6,11 +6,6 @@ module OSLNextcloud
       require 'open-uri'
       require 'uri'
 
-      # Check to see if we are running in a docker container
-      def is_docker?
-        File.exist?('/.dockerenv')
-      end
-
       # Get latest version of nextcloud from Github
       def osl_nextcloud_latest_version(version)
         releases = []
