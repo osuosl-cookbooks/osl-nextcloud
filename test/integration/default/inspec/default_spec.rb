@@ -1,5 +1,10 @@
 # InSpec test for recipe osl-nextcloud::default
 
+# Openstack, Vagrant, and Dokken all have different php configurations
+vagrant = inspec.file('/home/vagrant').exist?
+docker = inspec.file('/.dockerenv').exist?
+openstack = !vagrant and !docker
+
 control 'osl_nextcloud' do
   describe php_config 'apc.enable_cli' do
     its('value') { should eq 1 }
@@ -86,12 +91,27 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^port: 6379$/ }
   end
 
+  # PHP attributes are different for Docker instances
   describe file('/etc/php-fpm.d/nextcloud.conf') do
     its('content') { should match /^pm.max_children = 43$/ }
     its('content') { should match /^pm.start_servers = 10$/ }
     its('content') { should match /^pm.min_spare_servers = 10$/ }
     its('content') { should match /^pm.max_spare_servers = 32$/ }
-  end
+  end if openstack
+
+  describe file('/etc/php-fpm.d/nextcloud.conf') do
+    its('content') { should match /^pm.max_children = 10$/ }
+    its('content') { should match /^pm.start_servers = 2$/ }
+    its('content') { should match /^pm.min_spare_servers = 2$/ }
+    its('content') { should match /^pm.max_spare_servers = 7$/ }
+  end if vagrant
+
+  describe file('/etc/php-fpm.d/nextcloud.conf') do
+    its('content') { should match /^pm.max_children = 255$/ }
+    its('content') { should match /^pm.start_servers = 63$/ }
+    its('content') { should match /^pm.min_spare_servers = 63$/ }
+    its('content') { should match /^pm.max_spare_servers = 191$/ }
+  end if docker
 
   describe http('http://localhost') do
     its('status') { should eq 200 }

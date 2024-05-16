@@ -122,7 +122,7 @@ action :create do
     selinux_boolean b do
       value true
     end
-  end
+  end unless docker?
 
   directory nextcloud_dir
 
