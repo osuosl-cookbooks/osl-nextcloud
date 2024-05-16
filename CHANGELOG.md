@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.1.2 (2024-05-16)
+------------------
+- Test Kitchen Config Refactor
+
 2.1.1 (2024-03-25)
 ------------------
 - Restart php-fpm before upgrading
