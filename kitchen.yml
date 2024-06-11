@@ -27,3 +27,5 @@ suites:
   - name: default
     run_list:
       - recipe[nextcloud-test::default]
+    driver:
+      flavor_ref: "m1.medium"
