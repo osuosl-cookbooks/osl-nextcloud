@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.1.3 (2024-06-12)
+------------------
+- Update to Nextcloud 29
+
 2.1.2 (2024-05-16)
 ------------------
 - Test Kitchen Config Refactor
