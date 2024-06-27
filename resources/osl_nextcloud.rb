@@ -26,6 +26,8 @@ action :create do
   include_recipe 'osl-selinux'
   include_recipe 'osl-apache'
   include_recipe 'osl-apache::mod_remoteip'
+  include_recipe 'osl-repos::epel'
+
   osl_php_install 'osl-nextcloud' do
     version '8.1'
     php_packages %w(
@@ -43,7 +45,6 @@ action :create do
       zip
     )
   end
-  include_recipe 'osl-repos::epel'
 
   %w(proxy proxy_fcgi).each do |m|
     apache2_module m do
