@@ -82,23 +82,42 @@ describe 'nextcloud-test::default' do
           %w(
             osl-apache
             osl-apache::mod_remoteip
-            osl-php
             osl-repos::epel
             osl-selinux
           ).each do |r|
             it do
-              expect(chef_run).to include_recipe(r)
+              is_expected.to include_recipe(r)
             end
           end
         end
 
+        it do
+          is_expected.to install_osl_php_install('osl-nextcloud').with(
+            version: '8.1',
+            php_packages: %w(
+              bcmath
+              gd
+              gmp
+              intl
+              json
+              mbstring
+              mysqlnd
+              opcache
+              pecl-apcu
+              pecl-imagick
+              pecl-redis5
+              zip
+            )
+          )
+        end
+
         %w(proxy proxy_fcgi).each do |m|
-          it { expect(chef_run).to enable_apache2_module m }
+          it { is_expected.to enable_apache2_module m }
           it { expect(chef_run.apache2_module(m)).to notify('apache2_service[osuosl]').to(:reload) }
         end
 
         it do
-          expect(chef_run).to add_php_ini('nextcloud').with(
+          is_expected.to add_osl_php_ini('nextcloud').with(
             options: {
               'apc.enable_cli' => '1',
               'memory_limit' => '512M',
@@ -110,7 +129,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to install_php_fpm_pool('nextcloud').with(
+          is_expected.to install_php_fpm_pool('nextcloud').with(
             listen: '/var/run/nextcloud-fpm.sock',
             max_children: 4,
             start_servers: 1,
@@ -120,27 +139,27 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to manage_selinux_fcontext("#{nc_d}(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
+          is_expected.to manage_selinux_fcontext("#{nc_d}(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
         end
 
         it do
-          expect(chef_run).to manage_selinux_fcontext("#{nc_v}/config(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
+          is_expected.to manage_selinux_fcontext("#{nc_v}/config(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
         end
 
         it do
-          expect(chef_run).to manage_selinux_fcontext("#{nc_v}/apps(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
+          is_expected.to manage_selinux_fcontext("#{nc_v}/apps(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
         end
 
         it do
-          expect(chef_run).to manage_selinux_fcontext("#{nc_v}/.htaccess").with(secontext: 'httpd_sys_rw_content_t')
+          is_expected.to manage_selinux_fcontext("#{nc_v}/.htaccess").with(secontext: 'httpd_sys_rw_content_t')
         end
 
         it do
-          expect(chef_run).to manage_selinux_fcontext("#{nc_v}/.user.ini").with(secontext: 'httpd_sys_rw_content_t')
+          is_expected.to manage_selinux_fcontext("#{nc_v}/.user.ini").with(secontext: 'httpd_sys_rw_content_t')
         end
 
         it do
-          expect(chef_run).to manage_selinux_fcontext("#{nc_v}/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?").with(
+          is_expected.to manage_selinux_fcontext("#{nc_v}/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?").with(
             secontext: 'httpd_sys_rw_content_t'
           )
         end
@@ -157,7 +176,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to nothing_execute('nextcloud: restorecon').with(
+          is_expected.to nothing_execute('nextcloud: restorecon').with(
             command: "restorecon -R #{nc}"
           )
         end
@@ -169,15 +188,15 @@ describe 'nextcloud-test::default' do
           httpd_can_sendmail
           httpd_use_gpg
         ).each do |b|
-          it { expect(chef_run).to set_selinux_boolean(b).with(value: 'on') }
+          it { is_expected.to set_selinux_boolean(b).with(value: 'on') }
         end
 
-        it { expect(chef_run).to create_directory(nc) }
-        it { expect(chef_run).to create_directory(nc_d).with(owner: 'apache', group: 'apache') }
-        it { expect(chef_run).to install_package(%w(tar bzip2)) }
+        it { is_expected.to create_directory(nc) }
+        it { is_expected.to create_directory(nc_d).with(owner: 'apache', group: 'apache') }
+        it { is_expected.to install_package(%w(tar bzip2)) }
 
         it do
-          expect(chef_run).to install_ark('nextcloud').with(
+          is_expected.to install_ark('nextcloud').with(
             url: "https://download.nextcloud.com/server/releases/nextcloud-#{nc_version}.tar.bz2",
             prefix_root: nc,
             prefix_home: nc,
@@ -196,7 +215,7 @@ describe 'nextcloud-test::default' do
         it { expect(chef_run.ark('nextcloud')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
 
         it do
-          expect(chef_run).to nothing_remote_file("#{nc_wr}/config/config.php").with(
+          is_expected.to nothing_remote_file("#{nc_wr}/config/config.php").with(
             owner: 'apache',
             group: 'apache',
             mode: '0640',
@@ -206,17 +225,17 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to nothing_execute('fix-nextcloud-owner').with(
+          is_expected.to nothing_execute('fix-nextcloud-owner').with(
             command: "chown -R apache:apache #{nc_wr}/{apps,config}"
           )
         end
 
-        it { expect(chef_run).to install_package('redis') }
-        it { expect(chef_run).to enable_service('redis') }
-        it { expect(chef_run).to start_service('redis') }
+        it { is_expected.to install_package('redis') }
+        it { is_expected.to enable_service('redis') }
+        it { is_expected.to start_service('redis') }
 
         it do
-          expect(chef_run).to create_apache_app('nextcloud.example.com').with(
+          is_expected.to create_apache_app('nextcloud.example.com').with(
             directory: nc_wr,
             allow_override: 'All',
             directory_options: %w(FollowSymLinks MultiViews),
@@ -229,7 +248,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to run_execute('install-nextcloud').with(
+          is_expected.to run_execute('install-nextcloud').with(
             cwd: nc_wr,
             user: 'apache',
             group: 'apache',
@@ -239,11 +258,11 @@ describe 'nextcloud-test::default' do
           )
         end
 
-        it { expect(chef_run).to nothing_execute('disable-nextcloud-crontab').with(command: 'crontab -u apache -r') }
+        it { is_expected.to nothing_execute('disable-nextcloud-crontab').with(command: 'crontab -u apache -r') }
         it { is_expected.to nothing_execute 'systemctl restart php-fpm' }
 
         it do
-          expect(chef_run).to nothing_execute('upgrade-nextcloud').with(
+          is_expected.to nothing_execute('upgrade-nextcloud').with(
             cwd: nc_wr,
             user: 'apache',
             group: 'apache',
@@ -253,11 +272,11 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to_not run_execute('nextcloud-config: trusted-domains-localhost')
+          is_expected.to_not run_execute('nextcloud-config: trusted-domains-localhost')
         end
 
         it do
-          expect(chef_run).to run_execute('nextcloud-config: trusted-domains-nextcloud.example.com').with(
+          is_expected.to run_execute('nextcloud-config: trusted-domains-nextcloud.example.com').with(
             cwd: nc_wr,
             user: 'apache',
             command: 'php occ config:system:set trusted_domains 1 --value=nextcloud.example.com'
@@ -265,7 +284,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to run_execute('nextcloud-config: memcache').with(
+          is_expected.to run_execute('nextcloud-config: memcache').with(
             cwd: nc_wr,
             user: 'apache',
             command: 'php occ config:system:set memcache.distributed --value="\OC\Memcache\Redis" && php occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
@@ -273,7 +292,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to run_execute('nextcloud-config: redis').with(
+          is_expected.to run_execute('nextcloud-config: redis').with(
             cwd: nc_wr,
             user: 'apache',
             command: "php occ config:system:set redis host --value=127.0.0.1\nphp occ config:system:set redis port --value=6379\n"
@@ -281,7 +300,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to run_execute('nextcloud-config: mail').with(
+          is_expected.to run_execute('nextcloud-config: mail').with(
             cwd: nc_wr,
             user: 'apache',
             command: "php occ config:system:set mail_smtpmode --value=smtp\nphp occ config:system:set mail_sendmailmode --value=smtp\nphp occ config:system:set mail_smtphost --value=smtp.osuosl.org\nphp occ config:system:set mail_from_address --value=noreply\nphp occ config:system:set mail_domain --value=example.com\n"
@@ -289,7 +308,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to run_execute('nextcloud-config: phone_region').with(
+          is_expected.to run_execute('nextcloud-config: phone_region').with(
             cwd: nc_wr,
             user: 'apache',
             command: "php occ config:system:set default_phone_region --value=us\n"
@@ -297,7 +316,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to create_cron('nextcloud').with(
+          is_expected.to create_cron('nextcloud').with(
             command: '/usr/bin/php -f /var/www/nextcloud.example.com/nextcloud/cron.php',
             user: 'apache',
             minute: '*/5'
@@ -305,7 +324,7 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          expect(chef_run).to_not create_remote_file("#{nc}/config.php").with(
+          is_expected.to_not create_remote_file("#{nc}/config.php").with(
             owner: 'apache',
             group: 'apache',
             mode: '0640',
@@ -327,15 +346,15 @@ describe 'nextcloud-test::default' do
         let(:node) { runner.node }
         cached(:chef_run) { runner.converge(described_recipe) }
 
-        it { expect(chef_run).to_not run_execute('install-nextcloud') }
-        it { expect(chef_run).to_not run_execute('upgrade-nextcloud') }
-        it { expect(chef_run).to_not run_execute('trusted-domains-localhost') }
-        it { expect(chef_run).to_not run_execute('trusted-domains-nextcloud.example.com') }
-        it { expect(chef_run).to_not run_execute('nextcloud-config: memcache') }
-        it { expect(chef_run).to_not run_execute('nextcloud-config: redis') }
-        it { expect(chef_run).to_not run_execute('nextcloud-config: mail') }
-        it { expect(chef_run).to_not run_execute('nextcloud-config: phone_region') }
-        it { expect(chef_run).to create_remote_file("#{nc}/config.php") }
+        it { is_expected.to_not run_execute('install-nextcloud') }
+        it { is_expected.to_not run_execute('upgrade-nextcloud') }
+        it { is_expected.to_not run_execute('trusted-domains-localhost') }
+        it { is_expected.to_not run_execute('trusted-domains-nextcloud.example.com') }
+        it { is_expected.to_not run_execute('nextcloud-config: memcache') }
+        it { is_expected.to_not run_execute('nextcloud-config: redis') }
+        it { is_expected.to_not run_execute('nextcloud-config: mail') }
+        it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
+        it { is_expected.to create_remote_file("#{nc}/config.php") }
       end
     end
   end
