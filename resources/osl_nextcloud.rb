@@ -3,6 +3,8 @@ unified_mode true
 
 property :version, String, default: '29'
 property :checksum, String
+property :apps, Array, default: []
+property :apps_disable, Array, default: []
 property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
 property :database_password, String, sensitive: true, required: true
@@ -12,6 +14,7 @@ property :nextcloud_admin_user, String, default: 'admin'
 property :mail_smtphost, String, default: 'smtp.osuosl.org'
 property :mail_from_address, String, default: 'noreply'
 property :mail_domain, String, required: true
+property :php_packages, Array, default: []
 property :server_name, String, name_property: true
 property :sensitive, [true, false], default: true
 property :server_aliases, Array, default: %w(localhost)
@@ -30,20 +33,7 @@ action :create do
 
   osl_php_install 'osl-nextcloud' do
     version '8.1'
-    php_packages %w(
-      bcmath
-      gd
-      gmp
-      intl
-      json
-      mbstring
-      mysqlnd
-      opcache
-      pecl-apcu
-      pecl-imagick
-      pecl-redis5
-      zip
-    )
+    php_packages (osl_nextcloud_php_packages << new_resource.php_packages).flatten.sort
   end
 
   %w(proxy proxy_fcgi).each do |m|
@@ -209,6 +199,7 @@ action :create do
 
   # Call this once
   nc_config = osl_nextcloud_config
+  nc_apps = osl_nextcloud_apps
 
   nc_installed = nc_config['system']['installed']
   cur_trusted_domains = nc_config['system']['trusted_domains']
@@ -298,6 +289,29 @@ action :create do
       php occ config:system:set default_phone_region --value=us
     EOC
     not_if { nc_config['system']['default_phone_region'] == 'us' }
+  end
+
+  new_resource.apps.each do |app|
+    execute "nextcloud-app: install and enable #{app}" do
+      cwd nextcloud_webroot
+      user 'apache'
+      command <<~EOC
+        php occ app:install -n #{app}
+        php occ app:enable -n #{app}
+      EOC
+      only_if { nc_apps['enabled'][app].nil? }
+    end
+  end
+
+  new_resource.apps_disable.each do |app|
+    execute "nextcloud-app: disable #{app}" do
+      cwd nextcloud_webroot
+      user 'apache'
+      command <<~EOC
+        php occ app:disable -n #{app}
+      EOC
+      only_if { nc_apps['disabled'][app].nil? }
+    end
   end
 
   cron 'nextcloud' do

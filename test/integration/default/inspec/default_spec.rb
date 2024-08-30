@@ -6,6 +6,10 @@ docker = inspec.file('/.dockerenv').exist?
 openstack = !vagrant and !docker
 
 control 'osl_nextcloud' do
+  def occ(cmd)
+    "sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ #{cmd}"
+  end
+
   describe php_config 'apc.enable_cli' do
     its('value') { should eq 1 }
   end
@@ -24,6 +28,10 @@ control 'osl_nextcloud' do
 
   describe php_config 'upload_max_filesize' do
     its('value') { should eq '1G' }
+  end
+
+  describe package 'php-ldap' do
+    it { should be_installed }
   end
 
   describe package 'redis' do
@@ -70,25 +78,29 @@ control 'osl_nextcloud' do
     it { should be_resolvable }
   end
 
-  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ status') do
-    its('exit_status') { should eq 0 }
-    its('stdout') { should match /installed: true/ }
-    its('stdout') { should match /versionstring: 29.[0-9]+.[0-9]+/ }
+  describe json({ command: occ('status --output json') }) do
+    its('installed') { should cmp true }
+    its('versionstring') { should match /^29.[0-9]+.[0-9]+/ }
   end
 
-  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ check') do
+  describe command occ('check') do
     its('exit_status') { should eq 0 }
   end
 
-  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ config:system:get installed') do
-    its('exit_status') { should eq 0 }
+  describe command occ('config:system:get --output json installed') do
     its('stdout') { should match /^true$/ }
   end
 
-  describe command('sudo -u apache php /var/www/nextcloud.example.com/nextcloud/occ config:system:get redis') do
-    its('exit_status') { should eq 0 }
-    its('stdout') { should match /^host: 127.0.0.1$/ }
-    its('stdout') { should match /^port: 6379$/ }
+  describe json({ command: occ('config:system:get --output json redis') }) do
+    its('host') { should cmp '127.0.0.1' }
+    its('port') { should cmp '6379' }
+  end
+
+  describe json({ command: occ('app:list --output json') }) do
+    its('enabled') { should include 'forms' }
+    its('enabled') { should include 'user_ldap' }
+    its('enabled') { should_not include 'weather_status' }
+    its('disabled') { should include 'weather_status' }
   end
 
   # PHP attributes are different for Docker instances

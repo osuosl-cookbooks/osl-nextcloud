@@ -37,6 +37,27 @@ describe 'nextcloud-test::default' do
             }
           }'
       occ_config = JSON.parse(occ_config)
+      occ_apps_not_installed =
+        '{
+          "enabled": {
+            "text": "1.0.0",
+            "weather_status": "1.0.0"
+          },
+          "disabled": {
+            "user_ldap": "1.0.0"
+          }
+        }'
+      occ_apps_installed =
+        '{
+          "enabled": {
+            "text": "1.0.0",
+            "forms": "1.0.0"
+          },
+          "disabled": {
+            "user_ldap": "1.0.0",
+            "weather_status": "1.0.0"
+          }
+        }'
 
       context 'nextcloud not installed' do
         before do
@@ -50,6 +71,16 @@ describe 'nextcloud-test::default' do
               }
             ).and_return(
               double(stdout: '{"system": {"trusted_domains": ["localhost"]}}', exitstatus: 0)
+            )
+            allow(provider).to receive_shell_out(
+              'php occ app:list --output json',
+              {
+                cwd: '/var/www/nextcloud.example.com/nextcloud',
+                user: 'apache',
+                group: 'apache',
+              }
+            ).and_return(
+              double(stdout: occ_apps_not_installed, exitstatus: 0)
             )
           end
 
@@ -100,6 +131,7 @@ describe 'nextcloud-test::default' do
               gmp
               intl
               json
+              ldap
               mbstring
               mysqlnd
               opcache
@@ -324,6 +356,22 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to run_execute('nextcloud-app: install and enable forms').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ app:install -n forms\nphp occ app:enable -n forms\n"
+          )
+        end
+
+        it do
+          is_expected.to run_execute('nextcloud-app: disable weather_status').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ app:disable -n weather_status\n"
+          )
+        end
+
+        it do
           is_expected.to_not create_remote_file("#{nc}/config.php").with(
             owner: 'apache',
             group: 'apache',
@@ -338,6 +386,8 @@ describe 'nextcloud-test::default' do
         before do
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to \
+            receive(:osl_nextcloud_apps).and_return(JSON.parse(occ_apps_installed))
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
@@ -354,6 +404,8 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: redis') }
         it { is_expected.to_not run_execute('nextcloud-config: mail') }
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
+        it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
+        it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
       end
     end

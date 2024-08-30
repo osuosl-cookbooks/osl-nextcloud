@@ -22,11 +22,14 @@ osl_mysql_test 'nextcloud' do
 end
 
 osl_nextcloud 'nextcloud.example.com' do
+  apps %w(forms user_ldap)
+  apps_disable %w(weather_status)
   database_host 'localhost'
   database_name 'nextcloud'
   database_user 'nextcloud'
   database_password 'nextcloud'
   nextcloud_admin_password 'unguessable'
   mail_domain 'example.com'
+  php_packages %w(ldap)
   server_aliases %w(localhost nextcloud.example.com)
 end
