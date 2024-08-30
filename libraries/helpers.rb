@@ -55,6 +55,38 @@ module OSLNextcloud
         end
         JSON.parse(cmd.stdout)
       end
+
+      # Return parsed output of current Nextcloud apps
+      def osl_nextcloud_apps
+        cmd = shell_out(
+          'php occ app:list --output json',
+          cwd: "/var/www/#{new_resource.server_name}/nextcloud",
+          user: 'apache',
+          group: 'apache'
+        )
+        if cmd.exitstatus != 0
+          Chef::Log.fatal('Failed executing: php occ app:list')
+          Chef::Log.fatal(cmd.stderr)
+        end
+        JSON.parse(cmd.stdout)
+      end
+
+      def osl_nextcloud_php_packages
+        %w(
+          bcmath
+          gd
+          gmp
+          intl
+          json
+          mbstring
+          mysqlnd
+          opcache
+          pecl-apcu
+          pecl-imagick
+          pecl-redis5
+          zip
+        )
+      end
     end
   end
 end
