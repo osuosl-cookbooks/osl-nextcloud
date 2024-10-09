@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.3.1 (2024-10-09)
+------------------
+- Run MIME type migrations during upgrades
+
 2.3.0 (2024-08-30)
 ------------------
 - Add properties to install/disable NextCloud Apps
