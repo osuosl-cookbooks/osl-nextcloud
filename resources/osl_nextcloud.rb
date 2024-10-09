@@ -228,6 +228,7 @@ action :create do
       php occ db:add-missing-columns
       php occ db:add-missing-indices
       php occ db:add-missing-primary-keys
+      php occ maintenance:repair --include-expensive
     EOC
     live_stream true
     action :nothing
