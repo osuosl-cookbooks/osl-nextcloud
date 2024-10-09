@@ -298,7 +298,7 @@ describe 'nextcloud-test::default' do
             cwd: nc_wr,
             user: 'apache',
             group: 'apache',
-            command: "php occ maintenance:mode --on\nphp occ upgrade\nphp occ maintenance:mode --off\nphp occ db:add-missing-columns\nphp occ db:add-missing-indices\nphp occ db:add-missing-primary-keys\n",
+            command: "php occ maintenance:mode --on\nphp occ upgrade\nphp occ maintenance:mode --off\nphp occ db:add-missing-columns\nphp occ db:add-missing-indices\nphp occ db:add-missing-primary-keys\nphp occ maintenance:repair --include-expensive\n",
             live_stream: true
           )
         end
