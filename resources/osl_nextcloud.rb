@@ -32,7 +32,7 @@ action :create do
   include_recipe 'osl-repos::epel'
 
   osl_php_install 'osl-nextcloud' do
-    version '8.1'
+    version '8.3'
     php_packages (osl_nextcloud_php_packages << new_resource.php_packages).flatten.sort
   end
 

@@ -124,7 +124,7 @@ describe 'nextcloud-test::default' do
 
         it do
           is_expected.to install_osl_php_install('osl-nextcloud').with(
-            version: '8.1',
+            version: '8.3',
             php_packages: %w(
               bcmath
               gd
