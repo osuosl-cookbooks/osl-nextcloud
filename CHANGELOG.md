@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.4.0 (2024-11-12)
+------------------
+- Update to NextCloud 30
+
 2.3.1 (2024-10-09)
 ------------------
 - Run MIME type migrations during upgrades
