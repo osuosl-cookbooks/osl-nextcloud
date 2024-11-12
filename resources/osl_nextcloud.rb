@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '29'
+property :version, String, default: '30'
 property :checksum, String
 property :apps, Array, default: []
 property :apps_disable, Array, default: []
@@ -32,7 +32,7 @@ action :create do
   include_recipe 'osl-repos::epel'
 
   osl_php_install 'osl-nextcloud' do
-    version '8.1'
+    version '8.3'
     php_packages (osl_nextcloud_php_packages << new_resource.php_packages).flatten.sort
   end
 

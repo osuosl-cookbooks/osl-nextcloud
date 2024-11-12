@@ -9,13 +9,13 @@ describe 'nextcloud-test::default' do
         )
       end
 
-      nc_version = '29.0.0'
+      nc_version = '30.0.0'
       nc_checksum = '2d49d297dc340092021057823e8e78a312bc00f56de7d8677ac790590918ab17'
       nc = '/var/www/nextcloud.example.com'
       nc_d = "#{nc}/data"
       nc_wr = "#{nc}/nextcloud"
       nc_v = "#{nc}/nextcloud-#{nc_version}"
-      github_releases = [{ name: 'v29.0.0' }, { name: 'v28.0.0' }, { name: 'v27.0.0' }]
+      github_releases = [{ name: 'v30.0.0' }, { name: 'v29.0.0' }, { name: 'v28.0.0' }]
 
       occ_config =
         '{
@@ -124,7 +124,7 @@ describe 'nextcloud-test::default' do
 
         it do
           is_expected.to install_osl_php_install('osl-nextcloud').with(
-            version: '8.1',
+            version: '8.3',
             php_packages: %w(
               bcmath
               gd
