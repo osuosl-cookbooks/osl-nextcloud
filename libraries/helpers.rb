@@ -83,7 +83,7 @@ module OSLNextcloud
           opcache
           pecl-apcu
           pecl-imagick
-          pecl-redis5
+          pecl-redis6
           zip
         )
       end
