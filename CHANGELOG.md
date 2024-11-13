@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.4.1 (2024-11-13)
+------------------
+- Update to using pecl-redis6 package
+
 2.4.0 (2024-11-12)
 ------------------
 - Update to NextCloud 30
