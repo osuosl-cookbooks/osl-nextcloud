@@ -6,7 +6,8 @@ TODO: Enter the cookbook description here.
 
 ### Platforms
 
-- CentOS 7+
+- AlmaLinux 8
+- AlmaLinux 9
 
 ### Cookbooks
 
