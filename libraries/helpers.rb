@@ -71,21 +71,39 @@ module OSLNextcloud
         JSON.parse(cmd.stdout)
       end
 
+      # changed pecl-imagick to imagick
       def osl_nextcloud_php_packages
-        %w(
-          bcmath
-          gd
-          gmp
-          intl
-          json
-          mbstring
-          mysqlnd
-          opcache
-          pecl-apcu
-          pecl-imagick
-          pecl-redis6
-          zip
-        )
+        if node['platform_version'].to_i >= 9
+          %w(
+            bcmath
+            gd
+            gmp
+            intl
+            json
+            mbstring
+            mysqlnd
+            opcache
+            pecl-apcu
+            imagick
+            pecl-redis6
+            zip
+          )
+        else
+          %w(
+            bcmath
+            gd
+            gmp
+            intl
+            json
+            mbstring
+            mysqlnd
+            opcache
+            pecl-apcu
+            pecl-imagick
+            pecl-redis6
+            zip
+          )
+        end
       end
     end
   end
