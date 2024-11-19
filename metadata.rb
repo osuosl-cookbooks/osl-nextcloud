@@ -15,3 +15,4 @@ depends          'osl-repos'
 depends          'osl-selinux'
 
 supports 'almalinux', '~> 8.0'
+supports 'almalinux', '~> 9.0'
