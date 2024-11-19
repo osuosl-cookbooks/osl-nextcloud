@@ -123,39 +123,40 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          packages = if platform[:version].to_i >= 9
-                       %w(
-                         bcmath
-                         gd
-                         gmp
-                         imagick
-                         intl
-                         json
-                         ldap
-                         mbstring
-                         mysqlnd
-                         opcache
-                         pecl-apcu
-                         pecl-redis6
-                         zip
-                       )
-                     else
-                       %w(
-                         bcmath
-                         gd
-                         gmp
-                         intl
-                         json
-                         ldap
-                         mbstring
-                         mysqlnd
-                         opcache
-                         pecl-apcu
-                         pecl-imagick
-                         pecl-redis6
-                         zip
-                       )
-                     end
+          packages =
+            if platform[:version].to_i >= 9
+              %w(
+                bcmath
+                gd
+                gmp
+                imagick
+                intl
+                json
+                ldap
+                mbstring
+                mysqlnd
+                opcache
+                pecl-apcu
+                pecl-redis6
+                zip
+              )
+            else
+              %w(
+                bcmath
+                gd
+                gmp
+                intl
+                json
+                ldap
+                mbstring
+                mysqlnd
+                opcache
+                pecl-apcu
+                pecl-imagick
+                pecl-redis6
+                zip
+              )
+            end
 
           is_expected.to install_osl_php_install('osl-nextcloud').with(
             version: '8.3',
