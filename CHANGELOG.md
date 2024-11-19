@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.5.0 (2024-11-19)
+------------------
+- Adding AlmaLinux 9 Support
+
 2.4.1 (2024-11-13)
 ------------------
 - Update to using pecl-redis6 package
