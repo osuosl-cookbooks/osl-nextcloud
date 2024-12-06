@@ -247,6 +247,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to create_directory(nc) }
         it { is_expected.to create_directory(nc_d).with(owner: 'apache', group: 'apache') }
         it { is_expected.to install_package(%w(tar bzip2)) }
+        it { is_expected.to nothing_ruby_block 'ark_notifies' }
 
         it do
           is_expected.to install_ark('nextcloud').with(
@@ -257,15 +258,17 @@ describe 'nextcloud-test::default' do
           )
         end
 
+        it { expect(chef_run.ark('nextcloud')).to notify('ruby_block[ark_notifies]').to(:run).immediately }
+
         it do
-          expect(chef_run.ark('nextcloud')).to \
+          expect(chef_run.ruby_block('ark_notifies')).to \
             notify("remote_file[#{nc_wr}/config/config.php]").to(:create).immediately
         end
 
-        it { expect(chef_run.ark('nextcloud')).to notify('execute[fix-nextcloud-owner]').to(:run).immediately }
-        it { expect(chef_run.ark('nextcloud')).to notify('execute[disable-nextcloud-crontab]').to(:run).immediately }
-        it { expect(chef_run.ark('nextcloud')).to notify('execute[systemctl restart php-fpm]').to(:run).immediately }
-        it { expect(chef_run.ark('nextcloud')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[fix-nextcloud-owner]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[disable-nextcloud-crontab]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[systemctl restart php-fpm]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
 
         it do
           is_expected.to nothing_remote_file("#{nc_wr}/config/config.php").with(

@@ -68,6 +68,7 @@ action :create do
   nextcloud_webroot = "#{nextcloud_dir}/nextcloud"
   nextcloud_webroot_versioned = "#{nextcloud_dir}/nextcloud-#{nextcloud_version}"
   nextcloud_data = "#{nextcloud_dir}/data"
+  download_successful = true
 
   selinux_fcontext "#{nextcloud_data}(/.*)?" do
     secontext 'httpd_sys_rw_content_t'
@@ -125,17 +126,31 @@ action :create do
 
   package %w(tar bzip2)
 
-  ark 'nextcloud' do
-    url "https://download.nextcloud.com/server/releases/nextcloud-#{nextcloud_version}.tar.bz2"
-    prefix_root nextcloud_dir
-    prefix_home nextcloud_dir
-    version nextcloud_version
-    checksum new_resource.checksum || osl_nextcloud_checksum(nextcloud_version)
+  ruby_block 'ark_notifies' do
+    block do
+      Chef::Log.info('Notifying other resources from ark[nextcloud]')
+    end
     notifies :create, "remote_file[#{nextcloud_webroot}/config/config.php]", :immediately
     notifies :run, 'execute[fix-nextcloud-owner]', :immediately
     notifies :run, 'execute[disable-nextcloud-crontab]', :immediately
     notifies :run, 'execute[systemctl restart php-fpm]', :immediately
     notifies :run, 'execute[upgrade-nextcloud]', :immediately
+    action :nothing
+    only_if { download_successful }
+  end
+
+  begin
+    ark 'nextcloud' do
+      url "https://download.nextcloud.com/server/releases/nextcloud-#{nextcloud_version}.tar.bz2"
+      prefix_root nextcloud_dir
+      prefix_home nextcloud_dir
+      version nextcloud_version
+      checksum new_resource.checksum || osl_nextcloud_checksum(nextcloud_version)
+      notifies :run, 'ruby_block[ark_notifies]', :immediately
+    end
+  rescue
+    Chef::Log.warn("Error downloading nextcloud-#{nextcloud_version} tarball, skipping remaining steps")
+    download_successful = false
   end
 
   # Copy current config (if it exists) to webroot
@@ -195,25 +210,30 @@ action :create do
     live_stream true
     sensitive new_resource.sensitive
     only_if { can_install? }
+    only_if { download_successful }
   end
 
   # Call this once
-  nc_config = osl_nextcloud_config
-  nc_apps = osl_nextcloud_apps
+  if download_successful
+    nc_config = osl_nextcloud_config
+    nc_apps = osl_nextcloud_apps
 
-  nc_installed = nc_config['system']['installed']
-  cur_trusted_domains = nc_config['system']['trusted_domains']
-  new_trusted_domains = [new_resource.server_name, new_resource.server_aliases].flatten!.sort.uniq
+    nc_installed = nc_config['system']['installed']
+    cur_trusted_domains = nc_config['system']['trusted_domains']
+    new_trusted_domains = [new_resource.server_name, new_resource.server_aliases].flatten!.sort.uniq
+  end
 
   # Disable crontab entry while doing an upgrade
   execute 'disable-nextcloud-crontab' do
     command 'crontab -u apache -r'
     action :nothing
+    only_if { download_successful }
     only_if { nc_installed == true && ::File.exist?('/var/spool/cron/apache') }
   end
 
   execute 'systemctl restart php-fpm' do
     action :nothing
+    only_if { download_successful }
   end
 
   # https://docs.nextcloud.com/server/latest/admin_manual/maintenance/upgrade.html
@@ -232,6 +252,7 @@ action :create do
     EOC
     live_stream true
     action :nothing
+    only_if { download_successful }
     only_if { nc_installed == true }
   end
 
@@ -242,7 +263,7 @@ action :create do
       command "php occ config:system:set trusted_domains #{new_trusted_domains.find_index(domain)} --value=#{domain}"
       not_if { cur_trusted_domains.include?(domain) }
     end
-  end
+  end if download_successful
 
   execute 'nextcloud-config: memcache' do
     cwd nextcloud_webroot
@@ -252,7 +273,7 @@ action :create do
       nc_config['system']['memcache.distributed'] == '\OC\Memcache\Redis' && \
         nc_config['system']['memcache.local'] == '\OC\Memcache\APCu'
     end
-  end
+  end if download_successful
 
   execute 'nextcloud-config: redis' do
     cwd nextcloud_webroot
@@ -262,7 +283,7 @@ action :create do
       php occ config:system:set redis port --value=6379
     EOC
     not_if { nc_config['system']['redis'] == { 'host' => '127.0.0.1', 'port' => '6379' } }
-  end
+  end if download_successful
 
   execute 'nextcloud-config: mail' do
     cwd nextcloud_webroot
@@ -281,7 +302,7 @@ action :create do
         nc_config['system']['mail_from_address'] == new_resource.mail_from_address && \
         nc_config['system']['mail_domain'] == new_resource.mail_domain
     end
-  end
+  end if download_successful
 
   execute 'nextcloud-config: phone_region' do
     cwd nextcloud_webroot
@@ -290,7 +311,7 @@ action :create do
       php occ config:system:set default_phone_region --value=us
     EOC
     not_if { nc_config['system']['default_phone_region'] == 'us' }
-  end
+  end if download_successful
 
   new_resource.apps.each do |app|
     execute "nextcloud-app: install and enable #{app}" do
@@ -302,7 +323,7 @@ action :create do
       EOC
       only_if { nc_apps['enabled'][app].nil? }
     end
-  end
+  end if download_successful
 
   new_resource.apps_disable.each do |app|
     execute "nextcloud-app: disable #{app}" do
@@ -313,7 +334,7 @@ action :create do
       EOC
       only_if { nc_apps['disabled'][app].nil? }
     end
-  end
+  end if download_successful
 
   cron 'nextcloud' do
     command "/usr/bin/php -f #{nextcloud_webroot}/cron.php"
@@ -328,6 +349,7 @@ action :create do
     mode '0640'
     source "file://#{nextcloud_webroot}/config/config.php"
     sensitive true
+    only_if { download_successful }
     only_if { nc_installed == true }
   end
 end
