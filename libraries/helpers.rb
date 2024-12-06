@@ -25,8 +25,13 @@ module OSLNextcloud
       # Get sha256sum from nextcloud website
       def osl_nextcloud_checksum(version)
         download_url = 'https://download.nextcloud.com/server/releases'
-        checksums = URI.open("#{download_url}/nextcloud-#{version}.tar.bz2.sha256")
-        checksums.grep(/nextcloud-#{version}/)[0].split.first
+        begin
+          checksums = URI.open("#{download_url}/nextcloud-#{version}.tar.bz2.sha256")
+          checksums.grep(/nextcloud-#{version}/)[0].split.first
+        rescue OpenURI::HTTPError => e
+          Chef::Log.warn("Error getting checksum for nextcloud-#{version}: #{e}")
+          nil
+        end
       end
 
       # Return true if Nextcloud has not yet been installed
