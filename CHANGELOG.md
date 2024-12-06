@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.5.1 (2024-12-06)
+------------------
+- Gracefully exit if tarball doesn't exist on mirror
+
 2.5.0 (2024-11-19)
 ------------------
 - Adding AlmaLinux 9 Support
