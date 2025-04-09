@@ -131,7 +131,6 @@ describe 'nextcloud-test::default' do
                 gmp
                 imagick
                 intl
-                json
                 ldap
                 mbstring
                 mysqlnd
@@ -146,7 +145,6 @@ describe 'nextcloud-test::default' do
                 gd
                 gmp
                 intl
-                json
                 ldap
                 mbstring
                 mysqlnd

@@ -84,7 +84,6 @@ module OSLNextcloud
             gd
             gmp
             intl
-            json
             mbstring
             mysqlnd
             opcache
@@ -99,7 +98,6 @@ module OSLNextcloud
             gd
             gmp
             intl
-            json
             mbstring
             mysqlnd
             opcache
