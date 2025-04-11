@@ -151,7 +151,7 @@ describe 'nextcloud-test::default' do
                 mysqlnd
                 opcache
                 pecl-apcu
-                pecl-imagick
+                pecl-imagick-im7
                 pecl-redis6
                 zip
               )
