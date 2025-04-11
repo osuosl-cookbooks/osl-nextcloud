@@ -374,7 +374,7 @@ describe 'nextcloud-test::default' do
           is_expected.to run_execute('nextcloud-config: overwrite.cli.url').with(
             cwd: nc_wr,
             user: 'apache',
-            command: "php occ config:system:set overwrite.cli.url --value='nextcloud.example.com'\n"
+            command: "php occ config:system:set overwrite.cli.url --value=nextcloud.example.com\n"
           )
         end
 

@@ -318,9 +318,9 @@ action :create do
     cwd nextcloud_webroot
     user 'apache'
     command <<~EOC
-      php occ config:system:set overwrite.cli.url --value='nextcloud.example.com'
+      php occ config:system:set overwrite.cli.url --value=#{new_resource.server_name}
     EOC
-    not_if { nc_config['system']['overwrite.cli.url'] == 'nextcloud.example.com' }
+    not_if { nc_config['system']['overwrite.cli.url'] == new_resource.server_name }
   end if download_successful
 
   new_resource.apps.each do |app|
