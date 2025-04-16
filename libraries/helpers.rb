@@ -84,7 +84,6 @@ module OSLNextcloud
             gd
             gmp
             intl
-            json
             mbstring
             mysqlnd
             opcache
@@ -99,12 +98,11 @@ module OSLNextcloud
             gd
             gmp
             intl
-            json
             mbstring
             mysqlnd
             opcache
             pecl-apcu
-            pecl-imagick
+            pecl-imagick-im7
             pecl-redis6
             zip
           )

@@ -29,6 +29,7 @@ describe 'nextcloud-test::default' do
             "mail_smtphost": "smtp.osuosl.org",
             "mail_from_address": "noreply",
             "mail_domain": "example.com",
+            "overwrite.cli.url": "nextcloud.example.com",
             "trusted_domains": [ "localhost", "nextcloud.example.com" ],
             "redis": {
                 "host": "127.0.0.1",
@@ -131,7 +132,6 @@ describe 'nextcloud-test::default' do
                 gmp
                 imagick
                 intl
-                json
                 ldap
                 mbstring
                 mysqlnd
@@ -146,13 +146,12 @@ describe 'nextcloud-test::default' do
                 gd
                 gmp
                 intl
-                json
                 ldap
                 mbstring
                 mysqlnd
                 opcache
                 pecl-apcu
-                pecl-imagick
+                pecl-imagick-im7
                 pecl-redis6
                 zip
               )
@@ -372,6 +371,14 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to run_execute('nextcloud-config: overwrite.cli.url').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ config:system:set overwrite.cli.url --value=nextcloud.example.com\n"
+          )
+        end
+
+        it do
           is_expected.to create_cron('nextcloud').with(
             command: '/usr/bin/php -f /var/www/nextcloud.example.com/nextcloud/cron.php',
             user: 'apache',
@@ -428,6 +435,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: redis') }
         it { is_expected.to_not run_execute('nextcloud-config: mail') }
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
+        it { is_expected.to_not run_execute('nextcloud-config: overwrite.cli.url') }
         it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
         it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
