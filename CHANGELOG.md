@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.5.2 (2025-04-16)
+------------------
+- Fix URL that shows up in activity notifications
+
 2.5.1 (2024-12-06)
 ------------------
 - Gracefully exit if tarball doesn't exist on mirror
