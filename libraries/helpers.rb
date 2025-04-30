@@ -34,6 +34,14 @@ module OSLNextcloud
         end
       end
 
+      def osl_nextcloud_scheme
+        if kitchen?
+          'http'
+        else
+          'https'
+        end
+      end
+
       # Return true if Nextcloud has not yet been installed
       def can_install?
         cmd = shell_out(

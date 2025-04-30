@@ -91,6 +91,10 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^true$/ }
   end
 
+  describe command occ('config:system:get --output json maintenance_window_start') do
+    its('stdout') { should match /^1$/ }
+  end
+
   describe json({ command: occ('config:system:get --output json redis') }) do
     its('host') { should cmp '127.0.0.1' }
     its('port') { should cmp '6379' }
@@ -101,6 +105,12 @@ control 'osl_nextcloud' do
     its('enabled') { should include 'user_ldap' }
     its('enabled') { should_not include 'weather_status' }
     its('disabled') { should include 'weather_status' }
+  end
+
+  describe command occ('setupchecks --output json | jq \'.. | objects | select(.severity == "error") | .severity\'') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should eq '' }
+    its('stderr') { should eq '' }
   end
 
   # PHP attributes are different for Docker instances

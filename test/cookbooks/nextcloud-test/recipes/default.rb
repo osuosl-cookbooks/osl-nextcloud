@@ -16,6 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+append_if_no_line node['ipaddress'] do
+  path '/etc/hosts'
+  line "#{node['ipaddress']} nextcloud.example.com"
+  sensitive false
+end
+
 osl_mysql_test 'nextcloud' do
   username 'nextcloud'
   password 'nextcloud'
@@ -33,3 +39,6 @@ osl_nextcloud 'nextcloud.example.com' do
   php_packages %w(ldap)
   server_aliases %w(localhost nextcloud.example.com)
 end
+
+# Used for testing
+package 'jq'
