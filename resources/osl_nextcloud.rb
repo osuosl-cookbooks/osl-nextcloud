@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '30'
+property :version, String, default: '31'
 property :checksum, String
 property :apps, Array, default: []
 property :apps_disable, Array, default: []
@@ -14,6 +14,7 @@ property :nextcloud_admin_user, String, default: 'admin'
 property :mail_smtphost, String, default: 'smtp.osuosl.org'
 property :mail_from_address, String, default: 'noreply'
 property :mail_domain, String, required: true
+property :maintenance_window_start, Integer, default: 1
 property :php_packages, Array, default: []
 property :server_name, String, name_property: true
 property :sensitive, [true, false], default: true
@@ -33,7 +34,10 @@ action :create do
 
   osl_php_install 'osl-nextcloud' do
     version '8.3'
+    use_opcache true
+    opcache_conf('opcache.interned_strings_buffer' => 16)
     php_packages (osl_nextcloud_php_packages << new_resource.php_packages).flatten.sort
+    notifies :reload, 'service[php-fpm]'
   end
 
   %w(proxy proxy_fcgi).each do |m|
@@ -50,6 +54,7 @@ action :create do
       'post_max_size' => new_resource.max_filesize,
       'upload_max_filesize' => new_resource.max_filesize
     )
+    notifies :reload, 'service[php-fpm]'
   end
 
   # Current size is 52MB
@@ -61,6 +66,11 @@ action :create do
     start_servers fpm_settings['start_servers']
     min_spare_servers fpm_settings['min_spare_servers']
     max_spare_servers fpm_settings['max_spare_servers']
+  end
+
+  # Register service for reloads
+  service 'php-fpm' do
+    action :nothing
   end
 
   nextcloud_version = osl_nextcloud_latest_version(new_resource.version)
@@ -184,6 +194,9 @@ action :create do
       '<FilesMatch "\.(php|phar)$">',
       '  SetHandler "proxy:unix:/var/run/nextcloud-fpm.sock|fcgi://localhost/"',
       '</FilesMatch>',
+      '<IfModule mod_headers.c>',
+      '  Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"',
+      '</IfModule>',
     ]
     directory_custom_directives [
       'Require all granted',
@@ -318,9 +331,18 @@ action :create do
     cwd nextcloud_webroot
     user 'apache'
     command <<~EOC
-      php occ config:system:set overwrite.cli.url --value=#{new_resource.server_name}
+      php occ config:system:set overwrite.cli.url --value=#{osl_nextcloud_scheme}://#{new_resource.server_name}
     EOC
-    not_if { nc_config['system']['overwrite.cli.url'] == new_resource.server_name }
+    not_if { nc_config['system']['overwrite.cli.url'] == "#{osl_nextcloud_scheme}://#{new_resource.server_name}" }
+  end if download_successful
+
+  execute 'nextcloud-config: maintenance_window_start' do
+    cwd nextcloud_webroot
+    user 'apache'
+    command <<~EOC
+      php occ config:system:set maintenance_window_start --type=integer --value=#{new_resource.maintenance_window_start}
+    EOC
+    not_if { nc_config['system']['maintenance_window_start'] == new_resource.maintenance_window_start }
   end if download_successful
 
   new_resource.apps.each do |app|

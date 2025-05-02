@@ -9,13 +9,13 @@ describe 'nextcloud-test::default' do
         )
       end
 
-      nc_version = '30.0.0'
+      nc_version = '31.0.0'
       nc_checksum = '2d49d297dc340092021057823e8e78a312bc00f56de7d8677ac790590918ab17'
       nc = '/var/www/nextcloud.example.com'
       nc_d = "#{nc}/data"
       nc_wr = "#{nc}/nextcloud"
       nc_v = "#{nc}/nextcloud-#{nc_version}"
-      github_releases = [{ name: 'v30.0.0' }, { name: 'v29.0.0' }, { name: 'v28.0.0' }]
+      github_releases = [{ name: 'v31.0.0' }, { name: 'v30.0.0' }, { name: 'v29.0.0' }]
 
       occ_config =
         '{
@@ -29,7 +29,8 @@ describe 'nextcloud-test::default' do
             "mail_smtphost": "smtp.osuosl.org",
             "mail_from_address": "noreply",
             "mail_domain": "example.com",
-            "overwrite.cli.url": "nextcloud.example.com",
+            "maintenance_window_start": 1,
+            "overwrite.cli.url": "https://nextcloud.example.com",
             "trusted_domains": [ "localhost", "nextcloud.example.com" ],
             "redis": {
                 "host": "127.0.0.1",
@@ -159,9 +160,13 @@ describe 'nextcloud-test::default' do
 
           is_expected.to install_osl_php_install('osl-nextcloud').with(
             version: '8.3',
+            use_opcache: true,
+            opcache_conf: { 'opcache.interned_strings_buffer' => 16 },
             php_packages: packages
           )
         end
+
+        it { expect(chef_run.osl_php_install('osl-nextcloud')).to notify('service[php-fpm]').to(:reload) }
 
         %w(proxy proxy_fcgi).each do |m|
           it { is_expected.to enable_apache2_module m }
@@ -179,6 +184,8 @@ describe 'nextcloud-test::default' do
             }
           )
         end
+
+        it { expect(chef_run.osl_php_ini('nextcloud')).to notify('service[php-fpm]').to(:reload) }
 
         it do
           is_expected.to install_php_fpm_pool('nextcloud').with(
@@ -298,6 +305,9 @@ describe 'nextcloud-test::default' do
               '<FilesMatch "\.(php|phar)$">',
               '  SetHandler "proxy:unix:/var/run/nextcloud-fpm.sock|fcgi://localhost/"',
               '</FilesMatch>',
+              '<IfModule mod_headers.c>',
+              '  Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"',
+              '</IfModule>',
             ]
           )
         end
@@ -374,7 +384,15 @@ describe 'nextcloud-test::default' do
           is_expected.to run_execute('nextcloud-config: overwrite.cli.url').with(
             cwd: nc_wr,
             user: 'apache',
-            command: "php occ config:system:set overwrite.cli.url --value=nextcloud.example.com\n"
+            command: "php occ config:system:set overwrite.cli.url --value=https://nextcloud.example.com\n"
+          )
+        end
+
+        it do
+          is_expected.to run_execute('nextcloud-config: maintenance_window_start').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ config:system:set maintenance_window_start --type=integer --value=1\n"
           )
         end
 
@@ -436,6 +454,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: mail') }
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
         it { is_expected.to_not run_execute('nextcloud-config: overwrite.cli.url') }
+        it { is_expected.to_not run_execute('nextcloud-config: maintenance_window_start') }
         it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
         it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
