@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.6.0 (2025-05-02)
+------------------
+- Upgrade to Nextcloud 31
+
 2.5.2 (2025-04-16)
 ------------------
 - Fix URL that shows up in activity notifications
