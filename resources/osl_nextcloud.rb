@@ -9,6 +9,7 @@ property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
 property :database_password, String, sensitive: true, required: true
 property :database_user, String, sensitive: true, required: true
+property :extra_config, Hash, default: {}
 property :nextcloud_admin_password, String, sensitive: true, required: true
 property :nextcloud_admin_user, String, default: 'admin'
 property :mail_smtphost, String, default: 'smtp.osuosl.org'
@@ -325,6 +326,17 @@ action :create do
     EOC
     not_if { nc_config['system']['default_phone_region'] == 'us' }
   end if download_successful
+
+  new_resource.extra_config.each do |key, value|
+    execute "nextcloud-config: #{key}" do
+      cwd nextcloud_webroot
+      user 'apache'
+      command <<~EOC
+        php occ config:system:set #{key} --value=#{value}
+      EOC
+      not_if { nc_config['system'][key] == value }
+    end if download_successful
+  end
 
   # This fixes the url in activity notifications; see Issue #24.
   execute 'nextcloud-config: overwrite.cli.url' do

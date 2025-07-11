@@ -381,6 +381,14 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to run_execute('nextcloud-config: default_timezone').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ config:system:set default_timezone --value=UTC\n"
+          )
+        end
+
+        it do
           is_expected.to run_execute('nextcloud-config: overwrite.cli.url').with(
             cwd: nc_wr,
             user: 'apache',
