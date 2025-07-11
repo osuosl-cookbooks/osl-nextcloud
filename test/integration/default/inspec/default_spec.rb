@@ -95,6 +95,10 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^1$/ }
   end
 
+  describe command occ('config:system:get --output json default_timezone') do
+    its('stdout') { should match /^\"UTC\"\n$/ }
+  end
+
   describe json({ command: occ('config:system:get --output json redis') }) do
     its('host') { should cmp '127.0.0.1' }
     its('port') { should cmp '6379' }

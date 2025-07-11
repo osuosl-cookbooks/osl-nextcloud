@@ -37,6 +37,7 @@ osl_nextcloud 'nextcloud.example.com' do
   nextcloud_admin_password 'unguessable'
   mail_domain 'example.com'
   php_packages %w(ldap)
+  extra_config('default_timezone' => 'UTC')
   server_aliases %w(localhost nextcloud.example.com)
 end
 
