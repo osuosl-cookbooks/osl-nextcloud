@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.7.0 (2025-07-11)
+------------------
+- Add extra_config property to resource
+
 2.6.0 (2025-05-02)
 ------------------
 - Upgrade to Nextcloud 31
