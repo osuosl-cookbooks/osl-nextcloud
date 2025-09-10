@@ -4,6 +4,7 @@
 vagrant = inspec.file('/home/vagrant').exist?
 docker = inspec.file('/.dockerenv').exist?
 openstack = !vagrant and !docker
+redis_pkg = (os.family == 'redhat' && os.release.to_i >= 10) ? 'valkey' : 'redis'
 
 control 'osl_nextcloud' do
   def occ(cmd)
@@ -34,11 +35,11 @@ control 'osl_nextcloud' do
     it { should be_installed }
   end
 
-  describe package 'redis' do
+  describe package redis_pkg do
     it { should be_installed }
   end
 
-  describe service 'redis' do
+  describe service redis_pkg do
     it { should be_running }
   end
 

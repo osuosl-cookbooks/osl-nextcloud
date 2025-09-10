@@ -292,9 +292,11 @@ describe 'nextcloud-test::default' do
           )
         end
 
-        it { is_expected.to install_package('redis') }
-        it { is_expected.to enable_service('redis') }
-        it { is_expected.to start_service('redis') }
+        redis_pkg = platform[:version].to_i >= 10 ? 'valkey' : 'redis'
+
+        it { is_expected.to install_package(redis_pkg) }
+        it { is_expected.to enable_service(redis_pkg) }
+        it { is_expected.to start_service(redis_pkg) }
 
         it do
           is_expected.to create_apache_app('nextcloud.example.com').with(
