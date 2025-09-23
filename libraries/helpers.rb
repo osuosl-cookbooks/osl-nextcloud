@@ -6,6 +6,10 @@ module OSLNextcloud
       require 'open-uri'
       require 'uri'
 
+      def osl_redis_pkg
+        (platform_family?('rhel') && node['platform_version'].to_i >= 10) ? 'valkey' : 'redis'
+      end
+
       # Get latest version of nextcloud from Github
       def osl_nextcloud_latest_version(version)
         releases = []

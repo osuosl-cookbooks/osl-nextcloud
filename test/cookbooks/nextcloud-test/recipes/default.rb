@@ -43,3 +43,9 @@ end
 
 # Used for testing
 package 'jq'
+
+execute 'nextcloud cronjob' do
+  command '/usr/bin/php -f /var/www/nextcloud.example.com/nextcloud/cron.php; touch /tmp/nextcloud-cron-ran'
+  creates '/tmp/nextcloud-cron-ran'
+  user 'apache'
+end

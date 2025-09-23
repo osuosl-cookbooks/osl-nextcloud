@@ -181,9 +181,9 @@ action :create do
     action :nothing
   end
 
-  package 'redis'
+  package osl_redis_pkg
 
-  service 'redis' do
+  service osl_redis_pkg do
     action [:enable, :start]
   end
 
