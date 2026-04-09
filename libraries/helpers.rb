@@ -120,6 +120,17 @@ module OSLNextcloud
           )
         end
       end
+
+      def theming_directory(data_dir)
+        if Dir.exist?(data_dir)
+          Dir.entries(data_dir).each do |entry|
+            next unless entry.start_with?('appdata_')
+            appdata_dir = File.join(data_dir, entry)
+            return appdata_dir
+          end
+        end
+        nil
+      end
     end
   end
 end

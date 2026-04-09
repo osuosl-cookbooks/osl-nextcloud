@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '31'
+property :version, String, default: '32'
 property :checksum, String
 property :apps, Array, default: []
 property :apps_disable, Array, default: []
@@ -395,5 +395,19 @@ action :create do
     sensitive true
     only_if { download_successful }
     only_if { nc_installed == true }
+  end
+
+  appdata_dir = theming_directory(nextcloud_data)
+  if appdata_dir
+    theming_global_dir = ::File.join(appdata_dir, 'theming', 'global')
+    directory theming_global_dir do
+      owner 'apache'
+      group 'apache'
+      recursive true
+      only_if { download_successful }
+      not_if { ::Dir.exist?(theming_global_dir) }
+    end
+  else
+    Chef::Log.warn("Expected appdata directory in #{nextcloud_data}")
   end
 end

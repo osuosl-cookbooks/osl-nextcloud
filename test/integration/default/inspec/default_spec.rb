@@ -81,7 +81,7 @@ control 'osl_nextcloud' do
 
   describe json({ command: occ('status --output json') }) do
     its('installed') { should cmp true }
-    its('versionstring') { should match /^31.[0-9]+.[0-9]+/ }
+    its('versionstring') { should match /^32.[0-9]+.[0-9]+/ }
   end
 
   describe command occ('check') do
