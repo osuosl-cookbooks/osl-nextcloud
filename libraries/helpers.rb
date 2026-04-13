@@ -123,13 +123,19 @@ module OSLNextcloud
 
       def theming_directory(data_dir)
         if Dir.exist?(data_dir)
-          Dir.entries(data_dir).each do |entry|
+          Dir.entries(data_dir).sort.each do |entry|
             next unless entry.start_with?('appdata_')
             appdata_dir = File.join(data_dir, entry)
             return appdata_dir
           end
         end
         nil
+      end
+
+      def theming_global_directory(data_dir)
+        appdata = theming_directory(data_dir)
+        return unless appdata
+        ::File.join(appdata, 'theming', 'global')
       end
     end
   end

@@ -104,10 +104,10 @@ describe 'nextcloud-test::default' do
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
-          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to \
-            receive(:theming_directory).with(nc_d).and_return(nc_appdata)
           allow(Dir).to receive(:exist?).and_call_original
-          allow(Dir).to receive(:exist?).with(nc_theming).and_return(false)
+          allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+          allow(Dir).to receive(:entries).and_call_original
+          allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
         end
 
         let(:node) { runner.node }
@@ -458,6 +458,10 @@ describe 'nextcloud-test::default' do
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
+          allow(Dir).to receive(:exist?).and_call_original
+          allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+          allow(Dir).to receive(:entries).and_call_original
+          allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
         end
 
         let(:node) { runner.node }
@@ -476,7 +480,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
         it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
-        it { is_expected.to_not create_directory(nc_theming).with(owner: 'apache', group: 'apache', recursive: true) }
+        it { is_expected.to create_directory(nc_theming).with(owner: 'apache', group: 'apache', recursive: true) }
       end
     end
   end
