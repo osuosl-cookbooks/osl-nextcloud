@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.9.0 (2026-04-16)
+------------------
+- Nextcloud 32 upgrade
+
 2.8.0 (2025-09-23)
 ------------------
 - Add support for AlmaLinux 10
