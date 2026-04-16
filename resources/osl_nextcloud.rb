@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '31'
+property :version, String, default: '32'
 property :checksum, String
 property :apps, Array, default: []
 property :apps_disable, Array, default: []
@@ -395,5 +395,14 @@ action :create do
     sensitive true
     only_if { download_successful }
     only_if { nc_installed == true }
+  end
+
+  directory 'create theming directory' do
+    path lazy { theming_global_directory(nextcloud_data) }
+    owner 'apache'
+    group 'apache'
+    recursive true
+    only_if { download_successful }
+    only_if { theming_global_directory(nextcloud_data) }
   end
 end

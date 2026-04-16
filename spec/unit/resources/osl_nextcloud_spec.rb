@@ -9,13 +9,15 @@ describe 'nextcloud-test::default' do
         )
       end
 
-      nc_version = '31.0.0'
+      nc_version = '32.0.0'
       nc_checksum = '2d49d297dc340092021057823e8e78a312bc00f56de7d8677ac790590918ab17'
       nc = '/var/www/nextcloud.example.com'
       nc_d = "#{nc}/data"
       nc_wr = "#{nc}/nextcloud"
       nc_v = "#{nc}/nextcloud-#{nc_version}"
-      github_releases = [{ name: 'v31.0.0' }, { name: 'v30.0.0' }, { name: 'v29.0.0' }]
+      github_releases = [{ name: 'v32.0.0' }, { name: 'v31.0.0' }, { name: 'v30.0.0' }, { name: 'v29.0.0' }]
+      nc_appdata = "#{nc_d}/appdata_xyz123"
+      nc_theming = "#{nc_appdata}/theming/global"
 
       occ_config =
         '{
@@ -102,6 +104,10 @@ describe 'nextcloud-test::default' do
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
+          allow(Dir).to receive(:exist?).and_call_original
+          allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+          allow(Dir).to receive(:entries).and_call_original
+          allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
         end
 
         let(:node) { runner.node }
@@ -439,6 +445,8 @@ describe 'nextcloud-test::default' do
             sensitive: true
           )
         end
+
+        it { is_expected.to create_directory(nc_theming).with(owner: 'apache', group: 'apache', recursive: true) }
       end
 
       context 'nextcloud installed' do
@@ -450,6 +458,10 @@ describe 'nextcloud-test::default' do
           content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
           allow(URI).to receive(:open).and_return(content)
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
+          allow(Dir).to receive(:exist?).and_call_original
+          allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+          allow(Dir).to receive(:entries).and_call_original
+          allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
         end
 
         let(:node) { runner.node }
@@ -468,6 +480,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
         it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
+        it { is_expected.to create_directory(nc_theming).with(owner: 'apache', group: 'apache', recursive: true) }
       end
     end
   end
