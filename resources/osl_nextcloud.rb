@@ -1,7 +1,7 @@
 provides :osl_nextcloud
 unified_mode true
 
-property :version, String, default: '32'
+property :version, String, default: '33'
 property :checksum, String
 property :apps, Array, default: []
 property :apps_disable, Array, default: []
