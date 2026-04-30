@@ -303,6 +303,13 @@ action :create do
   end
 
   # https://docs.nextcloud.com/server/latest/admin_manual/maintenance/upgrade.html
+  # app:update --all pulls fresh releases for every installed app, including ones not
+  # listed in new_resource.apps. A major Nextcloud bump disables any app whose
+  # info.xml hasn't been updated to declare compatibility yet; this update pass gives
+  # those apps a chance to come back online before the next chef-client run.
+  # `occ upgrade` toggles maintenance mode off when it finishes, so re-enable it before
+  # app:update / repair run — otherwise users hit half-updated apps and an in-progress
+  # consistency repair.
   execute 'upgrade-nextcloud' do
     cwd nextcloud_webroot
     user 'apache'
@@ -310,14 +317,14 @@ action :create do
     command <<~EOC
       php occ maintenance:mode --on
       php occ upgrade
-      php occ maintenance:mode --off
-      php occ db:add-missing-columns
-      php occ db:add-missing-indices
-      php occ db:add-missing-primary-keys
+      php occ maintenance:mode --on
+      php occ app:update --all
       php occ maintenance:repair --include-expensive
+      php occ maintenance:mode --off
     EOC
     live_stream true
     action :nothing
+    notifies :run, 'execute[nextcloud-db-add-missing]', :delayed
     only_if { download_successful }
     only_if { nc_installed == true }
   end
@@ -446,6 +453,7 @@ action :create do
         php occ app:install -n #{app}
         php occ app:enable -n #{app}
       EOC
+      notifies :run, 'execute[nextcloud-db-add-missing]', :delayed
       only_if { nc_apps['enabled'][app].nil? }
     end
   end if download_successful
@@ -459,6 +467,23 @@ action :create do
       EOC
       only_if { nc_apps['disabled'][app].nil? }
     end
+  end if download_successful
+
+  # Notified by upgrade-nextcloud and by per-app install/enable executes so missing
+  # schema gets backfilled whenever an app's state changes — including the case where
+  # an app disabled during a major-version bump is re-enabled on a later converge once
+  # a compatible release has shipped.
+  execute 'nextcloud-db-add-missing' do
+    cwd nextcloud_webroot
+    user 'apache'
+    group 'apache'
+    command <<~EOC
+      php occ db:add-missing-columns
+      php occ db:add-missing-indices
+      php occ db:add-missing-primary-keys
+    EOC
+    live_stream true
+    action :nothing
   end if download_successful
 
   cron 'nextcloud' do

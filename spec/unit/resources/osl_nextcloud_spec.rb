@@ -351,10 +351,12 @@ describe 'nextcloud-test::default' do
             cwd: nc_wr,
             user: 'apache',
             group: 'apache',
-            command: "php occ maintenance:mode --on\nphp occ upgrade\nphp occ maintenance:mode --off\nphp occ db:add-missing-columns\nphp occ db:add-missing-indices\nphp occ db:add-missing-primary-keys\nphp occ maintenance:repair --include-expensive\n",
+            command: "php occ maintenance:mode --on\nphp occ upgrade\nphp occ maintenance:mode --on\nphp occ app:update --all\nphp occ maintenance:repair --include-expensive\nphp occ maintenance:mode --off\n",
             live_stream: true
           )
         end
+
+        it { expect(chef_run.execute('upgrade-nextcloud')).to notify('execute[nextcloud-db-add-missing]').to(:run).delayed }
 
         it do
           is_expected.to_not run_execute('nextcloud-config: trusted-domains-localhost')
@@ -444,6 +446,16 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-migrate-apps-to-custom') }
 
         it do
+          is_expected.to nothing_execute('nextcloud-db-add-missing').with(
+            cwd: nc_wr,
+            user: 'apache',
+            group: 'apache',
+            command: "php occ db:add-missing-columns\nphp occ db:add-missing-indices\nphp occ db:add-missing-primary-keys\n",
+            live_stream: true
+          )
+        end
+
+        it do
           is_expected.to create_cron('nextcloud').with(
             command: '/usr/bin/php -f /var/www/nextcloud.example.com/nextcloud/cron.php',
             user: 'apache',
@@ -458,6 +470,8 @@ describe 'nextcloud-test::default' do
             command: "php occ app:install -n forms\nphp occ app:enable -n forms\n"
           )
         end
+
+        it { expect(chef_run.execute('nextcloud-app: install and enable forms')).to notify('execute[nextcloud-db-add-missing]').to(:run).delayed }
 
         it do
           is_expected.to run_execute('nextcloud-app: disable weather_status').with(
@@ -518,6 +532,16 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
         it { is_expected.to create_directory(nc_theming).with(owner: 'apache', group: 'apache', recursive: true) }
+
+        it do
+          is_expected.to nothing_execute('nextcloud-db-add-missing').with(
+            cwd: nc_wr,
+            user: 'apache',
+            group: 'apache',
+            command: "php occ db:add-missing-columns\nphp occ db:add-missing-indices\nphp occ db:add-missing-primary-keys\n",
+            live_stream: true
+          )
+        end
       end
     end
   end
