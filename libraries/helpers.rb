@@ -59,9 +59,11 @@ module OSLNextcloud
       end
 
       # Return parsed output of current Nextcloud configuration
+      # --no-warnings suppresses Symfony Console pre-command banners (e.g. app/upgrade
+      # notices) that would otherwise prepend non-JSON text and break JSON.parse.
       def osl_nextcloud_config
         cmd = shell_out(
-          'php occ config:list --private',
+          'php occ --no-warnings config:list --private',
           cwd: "/var/www/#{new_resource.server_name}/nextcloud",
           user: 'apache',
           group: 'apache'
@@ -76,7 +78,7 @@ module OSLNextcloud
       # Return parsed output of current Nextcloud apps
       def osl_nextcloud_apps
         cmd = shell_out(
-          'php occ app:list --output json',
+          'php occ --no-warnings app:list --output json',
           cwd: "/var/www/#{new_resource.server_name}/nextcloud",
           user: 'apache',
           group: 'apache'

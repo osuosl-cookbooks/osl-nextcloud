@@ -60,6 +60,23 @@ control 'osl_nextcloud' do
     its('group') { should eq 'apache' }
   end
 
+  describe directory '/var/www/nextcloud.example.com/custom_apps' do
+    it { should exist }
+    its('owner') { should eq 'apache' }
+    its('group') { should eq 'apache' }
+  end
+
+  # custom_apps must be reachable through the versioned-dir symlink so Apache can serve app assets
+  describe directory '/var/www/nextcloud.example.com/nextcloud/custom_apps' do
+    it { should exist }
+  end
+
+  describe command occ('config:system:get --output json apps_paths') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match %r{nextcloud\.example\.com\\/nextcloud\\/apps} }
+    its('stdout') { should match %r{nextcloud\.example\.com\\/custom_apps} }
+  end
+
   describe file '/var/www/nextcloud.example.com/nextcloud/config/config.php' do
     it { should exist }
     its('mode') { should cmp '0640' }
