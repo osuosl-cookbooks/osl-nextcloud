@@ -96,6 +96,11 @@ action :create do
     notifies :run, 'execute[nextcloud: restorecon]'
   end
 
+  selinux_fcontext "#{nextcloud_dir}/custom_apps(/.*)?" do
+    secontext 'httpd_sys_rw_content_t'
+    notifies :run, 'execute[nextcloud: restorecon]'
+  end
+
   selinux_fcontext "#{nextcloud_webroot_versioned}/.htaccess" do
     secontext 'httpd_sys_rw_content_t'
     notifies :run, 'execute[nextcloud: restorecon]'
@@ -135,6 +140,11 @@ action :create do
     group 'apache'
   end
 
+  directory "#{nextcloud_dir}/custom_apps" do
+    owner 'apache'
+    group 'apache'
+  end
+
   package %w(tar bzip2)
 
   ruby_block 'ark_notifies' do
@@ -145,6 +155,8 @@ action :create do
     notifies :run, 'execute[fix-nextcloud-owner]', :immediately
     notifies :run, 'execute[disable-nextcloud-crontab]', :immediately
     notifies :run, 'execute[systemctl restart php-fpm]', :immediately
+    notifies :create, "link[#{nextcloud_webroot_versioned}/custom_apps]", :immediately
+    notifies :create, "file[#{nextcloud_webroot}/config/apps_paths.config.php]", :immediately
     notifies :run, 'execute[upgrade-nextcloud]', :immediately
     action :nothing
     only_if { download_successful }
@@ -177,8 +189,48 @@ action :create do
   end
 
   execute 'fix-nextcloud-owner' do
-    command "chown -R apache:apache #{nextcloud_webroot}/{apps,config}"
+    command "chown -R apache:apache #{nextcloud_dir}/custom_apps #{nextcloud_webroot}/{apps,config}"
     action :nothing
+  end
+
+  # Symlink the persistent custom_apps dir into the versioned Nextcloud directory so
+  # Apache can serve app assets and occ sees both app paths on every version.
+  link "#{nextcloud_webroot_versioned}/custom_apps" do
+    to "#{nextcloud_dir}/custom_apps"
+    only_if { ::Dir.exist?(nextcloud_webroot_versioned) }
+  end
+
+  # Write apps_paths as a standalone config file rather than via `occ config:system:set
+  # apps_paths 0 path` etc. The positional-key form leaves apps_paths in an invalid
+  # intermediate state between calls (only `path` set, no `url`/`writable`), which makes
+  # Nextcloud print "apps directory not found!" on stdout and silently break every
+  # subsequent occ command. Nextcloud loads all *.config.php files in config/ and merges
+  # them via array_replace_recursive, so a complete config here is applied atomically.
+  file "#{nextcloud_webroot}/config/apps_paths.config.php" do
+    owner 'apache'
+    group 'apache'
+    mode '0640'
+    content <<~PHP
+      <?php
+      $CONFIG = array (
+        'apps_paths' =>
+        array (
+          0 =>
+          array (
+            'path' => '#{nextcloud_webroot}/apps',
+            'url' => '/apps',
+            'writable' => false,
+          ),
+          1 =>
+          array (
+            'path' => '#{nextcloud_dir}/custom_apps',
+            'url' => '/custom_apps',
+            'writable' => true,
+          ),
+        ),
+      );
+    PHP
+    only_if { ::Dir.exist?("#{nextcloud_webroot}/config") }
   end
 
   package osl_redis_pkg
@@ -355,6 +407,35 @@ action :create do
       php occ config:system:set maintenance_window_start --type=integer --value=#{new_resource.maintenance_window_start}
     EOC
     not_if { nc_config['system']['maintenance_window_start'] == new_resource.maintenance_window_start }
+  end if download_successful
+
+  # One-time migration: move any user-installed (non-shipped) apps out of the versioned
+  # apps/ directory into the persistent custom_apps/ directory so future upgrades don't
+  # blow them away. Shipped apps (bundled in the tarball) are identified by
+  # <shipped>true</shipped> in their appinfo/info.xml and stay in apps/.
+  execute 'nextcloud-migrate-apps-to-custom' do
+    cwd nextcloud_webroot
+    user 'apache'
+    group 'apache'
+    command <<~EOC
+      for dir in #{nextcloud_webroot}/apps/*/; do
+        [ -d "$dir" ] || continue
+        app=$(basename "$dir")
+        [ -f "$dir/appinfo/info.xml" ] || continue
+        grep -q '<shipped>true</shipped>' "$dir/appinfo/info.xml" && continue
+        [ -d "#{nextcloud_dir}/custom_apps/$app" ] && continue
+        mv "$dir" "#{nextcloud_dir}/custom_apps/$app"
+      done
+    EOC
+    not_if do
+      Dir.glob("#{nextcloud_webroot}/apps/*/").none? do |app_dir|
+        info_xml = ::File.join(app_dir, 'appinfo', 'info.xml')
+        ::File.exist?(info_xml) &&
+          !::File.read(info_xml).include?('<shipped>true</shipped>') &&
+          !::File.exist?(::File.join("#{nextcloud_dir}/custom_apps", ::File.basename(app_dir.chomp('/'))))
+      end
+    end
+    only_if { nc_installed == true }
   end if download_successful
 
   new_resource.apps.each do |app|

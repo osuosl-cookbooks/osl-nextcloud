@@ -67,7 +67,7 @@ describe 'nextcloud-test::default' do
         before do
           stubs_for_provider('osl_nextcloud[nextcloud.example.com]') do |provider|
             allow(provider).to receive_shell_out(
-              'php occ config:list --private',
+              'php occ --no-warnings config:list --private',
               {
                 cwd: '/var/www/nextcloud.example.com/nextcloud',
                 user: 'apache',
@@ -77,7 +77,7 @@ describe 'nextcloud-test::default' do
               double(stdout: '{"system": {"trusted_domains": ["localhost"]}}', exitstatus: 0)
             )
             allow(provider).to receive_shell_out(
-              'php occ app:list --output json',
+              'php occ --no-warnings app:list --output json',
               {
                 cwd: '/var/www/nextcloud.example.com/nextcloud',
                 user: 'apache',
@@ -106,6 +106,8 @@ describe 'nextcloud-test::default' do
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
           allow(Dir).to receive(:exist?).and_call_original
           allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+          allow(Dir).to receive(:exist?).with(nc_v).and_return(true)
+          allow(Dir).to receive(:exist?).with("#{nc_wr}/config").and_return(true)
           allow(Dir).to receive(:entries).and_call_original
           allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
         end
@@ -229,6 +231,10 @@ describe 'nextcloud-test::default' do
           )
         end
 
+        it do
+          is_expected.to manage_selinux_fcontext("#{nc}/custom_apps(/.*)?").with(secontext: 'httpd_sys_rw_content_t')
+        end
+
         [
           "#{nc_d}(/.*)?",
           "#{nc_v}/config(/.*)?",
@@ -236,6 +242,7 @@ describe 'nextcloud-test::default' do
           "#{nc_v}/.htaccess",
           "#{nc_v}/.user.ini",
           "#{nc_v}/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?",
+          "#{nc}/custom_apps(/.*)?",
         ].each do |f|
           it { expect(chef_run.selinux_fcontext(f)).to notify('execute[nextcloud: restorecon]').to(:run) }
         end
@@ -258,6 +265,7 @@ describe 'nextcloud-test::default' do
 
         it { is_expected.to create_directory(nc) }
         it { is_expected.to create_directory(nc_d).with(owner: 'apache', group: 'apache') }
+        it { is_expected.to create_directory("#{nc}/custom_apps").with(owner: 'apache', group: 'apache') }
         it { is_expected.to install_package(%w(tar bzip2)) }
         it { is_expected.to nothing_ruby_block 'ark_notifies' }
 
@@ -280,6 +288,8 @@ describe 'nextcloud-test::default' do
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[fix-nextcloud-owner]').to(:run).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[disable-nextcloud-crontab]').to(:run).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[systemctl restart php-fpm]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify("link[#{nc_v}/custom_apps]").to(:create).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify("file[#{nc_wr}/config/apps_paths.config.php]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
 
         it do
@@ -294,9 +304,11 @@ describe 'nextcloud-test::default' do
 
         it do
           is_expected.to nothing_execute('fix-nextcloud-owner').with(
-            command: "chown -R apache:apache #{nc_wr}/{apps,config}"
+            command: "chown -R apache:apache #{nc}/custom_apps #{nc_wr}/{apps,config}"
           )
         end
+
+        it { is_expected.to create_link("#{nc_v}/custom_apps").with(to: "#{nc}/custom_apps") }
 
         redis_pkg = platform[:version].to_i >= 10 ? 'valkey' : 'redis'
 
@@ -413,6 +425,25 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to create_file("#{nc_wr}/config/apps_paths.config.php").with(
+            owner: 'apache',
+            group: 'apache',
+            mode: '0640'
+          )
+        end
+
+        it do
+          expect(chef_run.file("#{nc_wr}/config/apps_paths.config.php").content).to include("'path' => '#{nc_wr}/apps'")
+          expect(chef_run.file("#{nc_wr}/config/apps_paths.config.php").content).to include("'path' => '#{nc}/custom_apps'")
+          expect(chef_run.file("#{nc_wr}/config/apps_paths.config.php").content).to include("'url' => '/apps'")
+          expect(chef_run.file("#{nc_wr}/config/apps_paths.config.php").content).to include("'url' => '/custom_apps'")
+          expect(chef_run.file("#{nc_wr}/config/apps_paths.config.php").content).to include("'writable' => false")
+          expect(chef_run.file("#{nc_wr}/config/apps_paths.config.php").content).to include("'writable' => true")
+        end
+
+        it { is_expected.to_not run_execute('nextcloud-migrate-apps-to-custom') }
+
+        it do
           is_expected.to create_cron('nextcloud').with(
             command: '/usr/bin/php -f /var/www/nextcloud.example.com/nextcloud/cron.php',
             user: 'apache',
@@ -460,8 +491,12 @@ describe 'nextcloud-test::default' do
           allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
           allow(Dir).to receive(:exist?).and_call_original
           allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+          allow(Dir).to receive(:exist?).with(nc_v).and_return(true)
+          allow(Dir).to receive(:exist?).with("#{nc_wr}/config").and_return(true)
           allow(Dir).to receive(:entries).and_call_original
           allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
+          allow(Dir).to receive(:glob).and_call_original
+          allow(Dir).to receive(:glob).with("#{nc_wr}/apps/*/").and_return([])
         end
 
         let(:node) { runner.node }
@@ -477,6 +512,8 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
         it { is_expected.to_not run_execute('nextcloud-config: overwrite.cli.url') }
         it { is_expected.to_not run_execute('nextcloud-config: maintenance_window_start') }
+        it { is_expected.to_not run_execute('nextcloud-migrate-apps-to-custom') }
+        it { is_expected.to create_file("#{nc_wr}/config/apps_paths.config.php").with(owner: 'apache', group: 'apache', mode: '0640') }
         it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
         it { is_expected.to_not run_execute('nextcloud-app: disable weather_status') }
         it { is_expected.to create_remote_file("#{nc}/config.php") }
