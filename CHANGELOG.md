@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.9.2 (2026-04-30)
+------------------
+- Re-run db:add-missing-* after app state changes
+
 2.9.1 (2026-04-30)
 ------------------
 - Persist user-installed apps across Nextcloud upgrades
