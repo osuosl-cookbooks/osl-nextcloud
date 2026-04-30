@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.9.1 (2026-04-30)
+------------------
+- Persist user-installed apps across Nextcloud upgrades
+
 2.9.0 (2026-04-16)
 ------------------
 - Nextcloud 32 upgrade
