@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+3.0.0 (2026-06-02)
+------------------
+- Add Nextcloud migration support and major-version upgrade staging
+
 2.10.0 (2026-06-02)
 -------------------
 - Nextcloud 33 upgrade
