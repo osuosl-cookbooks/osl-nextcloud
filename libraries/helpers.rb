@@ -23,7 +23,7 @@ module OSLNextcloud
           end
         end
         # First one should be latest
-        releases[0]
+        releases.first
       end
 
       # Get sha256sum from nextcloud website
@@ -31,7 +31,7 @@ module OSLNextcloud
         download_url = 'https://download.nextcloud.com/server/releases'
         begin
           checksums = URI.open("#{download_url}/nextcloud-#{version}.tar.bz2.sha256")
-          checksums.grep(/nextcloud-#{version}/)[0].split.first
+          checksums.grep(/nextcloud-#{version}/).first.split.first
         rescue OpenURI::HTTPError => e
           Chef::Log.warn("Error getting checksum for nextcloud-#{version}: #{e}")
           nil
