@@ -15,6 +15,15 @@ bin/*
 # test kitchen
 .kitchen/
 kitchen.local.yml
+# stray per-instance converge logs redirected to the repo root
+/*-almalinux-*.log
+
+# Nextcloud migration dumps (contain instance data; keep out of git).
+# The committed same-version test fixture (nextcloud-fixture.sql) is intentionally NOT ignored.
+test/cookbooks/nextcloud-test/files/nextcloud-source.sql
+nextcloud-migrated*.sql
+.upgrade-chain-*.state
+test/upgrade-logs/
 
 # Chef
 Berksfile.lock

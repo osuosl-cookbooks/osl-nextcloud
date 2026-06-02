@@ -123,6 +123,25 @@ module OSLNextcloud
         end
       end
 
+      # Deployed code version from version.php ($OC_Version) as a dotted string, or nil if
+      # not extracted yet. Used to stamp the bootstrapped config.php's 'version'.
+      def nextcloud_installed_version(webroot)
+        version_php = ::File.join(webroot, 'version.php')
+        return unless ::File.exist?(version_php)
+        match = ::File.read(version_php).match(/\$OC_Version\s*=\s*array\s*\(([0-9,\s]+)\)/)
+        return unless match
+        match[1].split(',').map(&:strip).reject(&:empty?).join('.')
+      end
+
+      # Version currently recorded in the live config.php, or nil. Compared with the code
+      # version to decide whether occ upgrade still needs to run.
+      def nextcloud_config_version(webroot)
+        config = ::File.join(webroot, 'config', 'config.php')
+        return unless ::File.exist?(config)
+        match = ::File.read(config).match(/'version'\s*=>\s*'([0-9.]+)'/)
+        match && match[1]
+      end
+
       def theming_directory(data_dir)
         if Dir.exist?(data_dir)
           Dir.entries(data_dir).sort.each do |entry|

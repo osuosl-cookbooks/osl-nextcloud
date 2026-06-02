@@ -5,7 +5,7 @@ license           'All Rights Reserved'
 description       'Installs/Configures osl-nextcloud'
 issues_url        'https://github.com/osuosl-cookbooks/osl-nextcloud/issues'
 source_url        'https://github.com/osuosl-cookbooks/osl-nextcloud'
-chef_version      '>= 16.0'
+chef_version      '>= 18.0'
 version           '2.10.0'
 
 depends          'ark'

@@ -9,11 +9,10 @@ transport:
   name: rsync
 
 provisioner:
-  name: chef_infra
-  product_name: cinc
+  name: cinc_infra
   product_version: '18'
   enforce_idempotency: true
-  multiple_converge: 3
+  multiple_converge: 2
   # Three runs are required due to the following resources not being idempotent:
   # - directory[/tmp] (percona)
   # - directory[/var/run/httpd] (osl_nextcloud)
@@ -29,5 +28,32 @@ suites:
   - name: default
     run_list:
       - recipe[nextcloud-test::default]
+    driver:
+      flavor_ref: "m1.medium"
+  - name: migrate
+    run_list:
+      - recipe[nextcloud-test::migrate]
+    driver:
+      flavor_ref: "m1.medium"
+  # Staging suite for the major-version upgrade chain (see test/upgrade-chain.sh). version,
+  # php_version, source_version and identity are injected per-converge via environment.
+  # Each step is a deliberate one-way state change, so run a single converge and do not
+  # enforce idempotency (overrides the global provisioner settings for this suite only).
+  - name: upgrade
+    provisioner:
+      multiple_converge: 1
+      enforce_idempotency: false
+    run_list:
+      - recipe[nextcloud-test::upgrade]
+    attributes:
+      nextcloud_upgrade:
+        # Quoted so YAML keeps these as strings (e.g. php_version 8.1 would otherwise parse
+        # as a Float, and a bare major like 32 as an Integer).
+        version: "<%= ENV['NC_VERSION'] || '25.0.13' %>"
+        php_version: "<%= ENV['NC_PHP'] || '8.1' %>"
+        source_version: "<%= ENV['NC_SOURCE_VERSION'] || '' %>"
+        instance_id: "<%= ENV['NC_INSTANCEID'] || '' %>"
+        password_salt: "<%= ENV['NC_SALT'] || '' %>"
+        secret: "<%= ENV['NC_SECRET'] || '' %>"
     driver:
       flavor_ref: "m1.medium"
