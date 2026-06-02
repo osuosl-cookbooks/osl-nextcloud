@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+2.10.0 (2026-06-02)
+-------------------
+- Nextcloud 33 upgrade
+
 2.9.2 (2026-04-30)
 ------------------
 - Re-run db:add-missing-* after app state changes
