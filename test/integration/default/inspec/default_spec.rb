@@ -109,6 +109,16 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^true$/ }
   end
 
+  # instanceid identifies the instance and is what migration "adopt existing" mode
+  # preserves: when instance_id/password_salt/secret are supplied, the bootstrapped
+  # config.php carries the imported instanceid and `occ config:system:get instanceid`
+  # returns that exact value. This (fresh-install) suite supplies no identity, so it just
+  # asserts an instanceid was established and is reported by occ.
+  describe command occ('config:system:get instanceid') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match /\S/ }
+  end
+
   describe command occ('config:system:get --output json maintenance_window_start') do
     its('stdout') { should match /^1$/ }
   end

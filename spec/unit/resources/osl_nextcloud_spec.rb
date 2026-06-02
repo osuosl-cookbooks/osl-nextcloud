@@ -32,6 +32,8 @@ describe 'nextcloud-test::default' do
             "mail_from_address": "noreply",
             "mail_domain": "example.com",
             "maintenance_window_start": 1,
+            "allow_user_to_change_display_name": false,
+            "log_rotate_size": 104857600,
             "overwrite.cli.url": "https://nextcloud.example.com",
             "trusted_domains": [ "localhost", "nextcloud.example.com" ],
             "redis": {
@@ -343,6 +345,9 @@ describe 'nextcloud-test::default' do
           )
         end
 
+        # No identity supplied: no bootstrapped config.php.
+        it { is_expected.to_not create_if_missing_file("#{nc_wr}/config/config.php") }
+
         it { is_expected.to nothing_execute('disable-nextcloud-crontab').with(command: 'crontab -u apache -r') }
         it { is_expected.to nothing_execute 'systemctl restart php-fpm' }
 
@@ -407,6 +412,24 @@ describe 'nextcloud-test::default' do
             cwd: nc_wr,
             user: 'apache',
             command: "php occ config:system:set default_timezone --value=UTC\n"
+          )
+        end
+
+        # Typed extra_config: a Ruby boolean/integer is written with the matching occ
+        # --type flag, while plain strings (default_timezone above) stay untyped.
+        it do
+          is_expected.to run_execute('nextcloud-config: allow_user_to_change_display_name').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ config:system:set allow_user_to_change_display_name --value=false --type=boolean\n"
+          )
+        end
+
+        it do
+          is_expected.to run_execute('nextcloud-config: log_rotate_size').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ config:system:set log_rotate_size --value=104857600 --type=integer\n"
           )
         end
 
@@ -526,6 +549,8 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
         it { is_expected.to_not run_execute('nextcloud-config: overwrite.cli.url') }
         it { is_expected.to_not run_execute('nextcloud-config: maintenance_window_start') }
+        it { is_expected.to_not run_execute('nextcloud-config: allow_user_to_change_display_name') }
+        it { is_expected.to_not run_execute('nextcloud-config: log_rotate_size') }
         it { is_expected.to_not run_execute('nextcloud-migrate-apps-to-custom') }
         it { is_expected.to create_file("#{nc_wr}/config/apps_paths.config.php").with(owner: 'apache', group: 'apache', mode: '0640') }
         it { is_expected.to_not run_execute('nextcloud-app: install and enable forms') }
@@ -545,4 +570,160 @@ describe 'nextcloud-test::default' do
       end
     end
   end
+end
+
+describe 'nextcloud-test::migrate' do
+  let(:runner) do
+    ChefSpec::SoloRunner.new(
+      ALMA_9.dup.merge(step_into: ['osl_nextcloud'])
+    )
+  end
+
+  nc_version = '32.0.0'
+  nc_checksum = '2d49d297dc340092021057823e8e78a312bc00f56de7d8677ac790590918ab17'
+  nc = '/var/www/nextcloud.example.com'
+  nc_d = "#{nc}/data"
+  nc_wr = "#{nc}/nextcloud"
+  nc_v = "#{nc}/nextcloud-#{nc_version}"
+  github_releases = [{ name: 'v32.0.0' }]
+  config_php = "#{nc_wr}/config/config.php"
+
+  # Adopted instance reports installed, so install is skipped.
+  occ_config = JSON.parse('{"system":{"installed":true,"trusted_domains":["localhost","nextcloud.example.com"]}}')
+  occ_apps = JSON.parse('{"enabled":{},"disabled":{}}')
+
+  before do
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_apps).and_return(occ_apps)
+    content = StringIO.new "#{nc_checksum}  nextcloud-#{nc_version}.tar.bz2"
+    allow(URI).to receive(:open).and_return(content)
+    allow(Net::HTTP).to receive(:get).and_return(github_releases.to_json)
+    allow(Dir).to receive(:exist?).and_call_original
+    allow(Dir).to receive(:exist?).with(nc_d).and_return(true)
+    allow(Dir).to receive(:exist?).with(nc_v).and_return(true)
+    allow(Dir).to receive(:exist?).with("#{nc_wr}/config").and_return(true)
+    allow(Dir).to receive(:entries).and_call_original
+    allow(Dir).to receive(:entries).with(nc_d).and_return(['.', '..', 'appdata_xyz123'])
+    allow(Dir).to receive(:glob).and_call_original
+    allow(Dir).to receive(:glob).with("#{nc_wr}/apps/*/").and_return([])
+    # config.php does not yet exist on the first migration converge, so the bootstrap renders.
+    allow(File).to receive(:exist?).and_call_original
+    allow(File).to receive(:exist?).with(config_php).and_return(false)
+  end
+
+  let(:node) { runner.node }
+  cached(:chef_run) { runner.converge(described_recipe) }
+
+  it 'converges successfully' do
+    expect { chef_run }.to_not raise_error
+  end
+
+  it 'renders the bootstrap config.php with the supplied identity and db settings' do
+    is_expected.to create_if_missing_file(config_php).with(owner: 'apache', group: 'apache', mode: '0640', sensitive: true)
+    content = chef_run.file(config_php).content
+    expect(content).to include("'instanceid' => 'ocm9ua92lqzi'")
+    expect(content).to include("'passwordsalt' => 'il4t2Kt3sJT+y7R5T3STtlDBgZy/S6'")
+    expect(content).to include("'secret' => 'aG7+wjGIP0FOQOAgJgsHoeGnAibLN60Cyy14TuYWDZxrZlfg'")
+    expect(content).to include("'installed' => true")
+    # version.php is absent under ChefSpec, so it falls back to the target version.
+    expect(content).to include("'version' => '32.0.0'")
+    expect(content).to include("'dbtype' => 'mysql'")
+    expect(content).to include("'dbtableprefix' => 'oc_'")
+    expect(content).to include("'mysql.utf8mb4' => true")
+    expect(content).to include("'datadirectory' => '#{nc_d}'")
+    expect(content).to include("0 => 'localhost'")
+    expect(content).to include("1 => 'nextcloud.example.com'")
+  end
+
+  # The existing-instance database is delivered and imported once, before occ runs.
+  it { is_expected.to create_cookbook_file('/tmp/nextcloud-fixture.sql').with(sensitive: true) }
+
+  it do
+    is_expected.to run_execute('import existing nextcloud database').with(
+      command: 'mysql nextcloud < /tmp/nextcloud-fixture.sql && touch /tmp/nextcloud-db-imported',
+      creates: '/tmp/nextcloud-db-imported'
+    )
+  end
+
+  # Adopting an externally-imported database: maintenance:install must never run.
+  it { is_expected.to_not run_execute('install-nextcloud') }
+
+  # occ upgrade still runs (notified by ark_notifies).
+  it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
+
+  it do
+    is_expected.to nothing_execute('upgrade-nextcloud').with(
+      cwd: nc_wr,
+      user: 'apache',
+      group: 'apache'
+    )
+  end
+end
+
+describe 'nextcloud-test::upgrade' do
+  let(:runner) do
+    ChefSpec::SoloRunner.new(ALMA_9.dup.merge(step_into: ['osl_nextcloud']))
+  end
+
+  nc = '/var/www/nextcloud.example.com'
+  nc_wr = "#{nc}/nextcloud"
+  nc_v = "#{nc}/nextcloud-25.0.13"
+  config_php = "#{nc_wr}/config/config.php"
+  occ_config = JSON.parse('{"system":{"installed":true,"trusted_domains":["localhost","nextcloud.example.com"]}}')
+
+  before do
+    runner.node.default['nextcloud_upgrade'] = {
+      'version' => '25.0.13',
+      'php_version' => '8.1',
+      'source_version' => '25.0.7',
+      'instance_id' => 'ocm9ua92lqzi',
+      'password_salt' => 'il4t2Kt3sJT+y7R5T3STtlDBgZy/S6',
+      'secret' => 'aG7+wjGIP0FOQOAgJgsHoeGnAibLN60Cyy14TuYWDZxrZlfg',
+    }
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_apps).and_return(JSON.parse('{"enabled":{},"disabled":{}}'))
+    # Adopted instance reports installed, so maintenance:install is unavailable -> can_install? false.
+    stubs_for_resource('execute[install-nextcloud]') do |resource|
+      allow(resource).to receive_shell_out(
+        'php occ | grep maintenance:install',
+        { cwd: nc_wr, user: 'apache', group: 'apache' }
+      ).and_return(double(exitstatus: 1))
+    end
+    # Fresh StringIO per call — the checksum helper consumes it, and it may be read more than once.
+    # A full 64-char sha256 is required to pass ark's checksum validation.
+    nc_sum = '2d49d297dc340092021057823e8e78a312bc00f56de7d8677ac790590918ab17'
+    allow(URI).to receive(:open) { StringIO.new("#{nc_sum}  nextcloud-25.0.13.tar.bz2") }
+    allow(Dir).to receive(:exist?).and_call_original
+    allow(Dir).to receive(:exist?).with("#{nc}/data").and_return(true)
+    allow(Dir).to receive(:exist?).with(nc_v).and_return(true)
+    allow(Dir).to receive(:exist?).with("#{nc_wr}/config").and_return(true)
+    allow(Dir).to receive(:entries).and_call_original
+    allow(Dir).to receive(:entries).with("#{nc}/data").and_return(['.', '..', 'appdata_xyz123'])
+    allow(Dir).to receive(:glob).and_call_original
+    allow(Dir).to receive(:glob).with("#{nc_wr}/apps/*/").and_return([])
+    allow(File).to receive(:exist?).and_call_original
+    allow(File).to receive(:exist?).with(config_php).and_return(false)
+  end
+
+  let(:node) { runner.node }
+  cached(:chef_run) { runner.converge(described_recipe) }
+
+  it 'converges successfully' do
+    expect { chef_run }.to_not raise_error
+  end
+
+  # php_version flows through to the PHP install (it is hard-coded to 8.3 by default).
+  it { is_expected.to install_osl_php_install('osl-nextcloud').with(version: '8.1') }
+
+  # An exact version is used as-is (no GitHub "latest" lookup), so the old release downloads.
+  it { is_expected.to install_ark('nextcloud').with(url: 'https://download.nextcloud.com/server/releases/nextcloud-25.0.13.tar.bz2') }
+
+  # The bootstrap stamps the supplied source_version, not the deployed version.
+  it do
+    is_expected.to create_if_missing_file(config_php)
+    expect(chef_run.file(config_php).content).to include("'version' => '25.0.7'")
+  end
+
+  it { is_expected.to_not run_execute('install-nextcloud') }
 end

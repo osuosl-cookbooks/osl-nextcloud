@@ -1,6 +1,6 @@
 #
 # Cookbook:: osl-nextcloud
-# Recipe:: default
+# Recipe:: migrate
 #
 # Copyright:: 2022-2026, Oregon State University
 #
@@ -16,6 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Exercises adopt-existing-instance mode: import a real mysqldump fixture, then give
+# osl_nextcloud the matching identity so it bootstraps config.php and skips install.
+
 append_if_no_line node['ipaddress'] do
   path '/etc/hosts'
   line "#{node['ipaddress']} nextcloud.example.com"
@@ -27,9 +30,21 @@ osl_mysql_test 'nextcloud' do
   password 'nextcloud'
 end
 
+# Stand-in for the operator-side DB import; marker file keeps it idempotent.
+cookbook_file '/tmp/nextcloud-fixture.sql' do
+  source 'nextcloud-fixture.sql'
+  sensitive true
+end
+
+execute 'import existing nextcloud database' do
+  command 'mysql nextcloud < /tmp/nextcloud-fixture.sql && touch /tmp/nextcloud-db-imported'
+  creates '/tmp/nextcloud-db-imported'
+  sensitive true
+end
+
 osl_nextcloud 'nextcloud.example.com' do
-  apps %w(forms user_ldap)
-  apps_disable %w(weather_status)
+  # Pin to the fixture's major (dumped from 32.x) so this stays a same-version adopt.
+  version '32'
   database_host 'localhost'
   database_name 'nextcloud'
   database_user 'nextcloud'
@@ -37,19 +52,12 @@ osl_nextcloud 'nextcloud.example.com' do
   nextcloud_admin_password 'unguessable'
   mail_domain 'example.com'
   php_packages %w(ldap)
-  extra_config(
-    'default_timezone' => 'UTC',
-    'allow_user_to_change_display_name' => false,
-    'log_rotate_size' => 104857600
-  )
+  # Identity from the dumped instance; in production these come from the data bag.
+  instance_id 'ocm9ua92lqzi'
+  password_salt 'il4t2Kt3sJT+y7R5T3STtlDBgZy/S6'
+  secret 'aG7+wjGIP0FOQOAgJgsHoeGnAibLN60Cyy14TuYWDZxrZlfg'
   server_aliases %w(localhost nextcloud.example.com)
 end
 
 # Used for testing
 package 'jq'
-
-execute 'nextcloud cronjob' do
-  command '/usr/bin/php -f /var/www/nextcloud.example.com/nextcloud/cron.php; touch /tmp/nextcloud-cron-ran'
-  creates '/tmp/nextcloud-cron-ran'
-  user 'apache'
-end

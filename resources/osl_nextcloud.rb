@@ -9,6 +9,14 @@ property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
 property :database_password, String, sensitive: true, required: true
 property :database_user, String, sensitive: true, required: true
+# Identity of an existing instance to adopt; when all three are set the resource bootstraps
+# config.php from them instead of running maintenance:install.
+property :instance_id, String, sensitive: true
+property :password_salt, String, sensitive: true
+property :secret, String, sensitive: true
+# Version in the imported database's original config.php; set when it differs from the
+# deployed code so occ upgrades from the right baseline. Unset = same-version adoption.
+property :source_version, String
 property :extra_config, Hash, default: {}
 property :nextcloud_admin_password, String, sensitive: true, required: true
 property :nextcloud_admin_user, String, default: 'admin'
@@ -17,6 +25,7 @@ property :mail_from_address, String, default: 'noreply'
 property :mail_domain, String, required: true
 property :maintenance_window_start, Integer, default: 1
 property :php_packages, Array, default: []
+property :php_version, String, default: '8.3'
 property :server_name, String, name_property: true
 property :sensitive, [true, false], default: true
 property :server_aliases, Array, default: %w(localhost)
@@ -34,7 +43,7 @@ action :create do
   include_recipe 'osl-repos::epel'
 
   osl_php_install 'osl-nextcloud' do
-    version '8.3'
+    version new_resource.php_version
     use_opcache true
     opcache_conf('opcache.interned_strings_buffer' => 16)
     php_packages (osl_nextcloud_php_packages << new_resource.php_packages).flatten.sort
@@ -74,12 +83,23 @@ action :create do
     action :nothing
   end
 
-  nextcloud_version = osl_nextcloud_latest_version(new_resource.version)
+  # Bare major ('33') resolves to the latest release via GitHub (recent only); an exact
+  # version ('25.0.13') is used as-is so old releases still work.
+  nextcloud_version =
+    if new_resource.version.count('.') >= 2
+      new_resource.version
+    else
+      osl_nextcloud_latest_version(new_resource.version)
+    end
   nextcloud_dir = "/var/www/#{new_resource.server_name}"
   nextcloud_webroot = "#{nextcloud_dir}/nextcloud"
   nextcloud_webroot_versioned = "#{nextcloud_dir}/nextcloud-#{nextcloud_version}"
   nextcloud_data = "#{nextcloud_dir}/data"
   download_successful = true
+
+  # Adopt-existing-instance mode: bootstrap config.php from supplied identity instead of
+  # maintenance:install, which would clobber an externally-imported database.
+  migrate_mode = !!(new_resource.instance_id && new_resource.password_salt && new_resource.secret)
 
   selinux_fcontext "#{nextcloud_data}(/.*)?" do
     secontext 'httpd_sys_rw_content_t'
@@ -233,6 +253,54 @@ action :create do
     only_if { ::Dir.exist?("#{nextcloud_webroot}/config") }
   end
 
+  # Render a complete config.php carrying the imported identity + db settings before the
+  # install/upgrade steps. 'installed' => true makes can_install? false so install-nextcloud
+  # is skipped; occ upgrade then migrates the imported schema.
+  if migrate_mode
+    # Version occ should treat the instance as being at: source_version (imported DB's real
+    # version) if given, else the deployed code version, else the target.
+    bootstrap_version =
+      new_resource.source_version ||
+      nextcloud_installed_version(nextcloud_webroot) ||
+      nextcloud_version
+    bootstrap_domains = [new_resource.server_name, new_resource.server_aliases].flatten.sort.uniq
+    bootstrap_lines = [
+      '<?php',
+      '$CONFIG = array (',
+      "  'instanceid' => '#{new_resource.instance_id}',",
+      "  'passwordsalt' => '#{new_resource.password_salt}',",
+      "  'secret' => '#{new_resource.secret}',",
+      "  'trusted_domains' => ",
+      '  array (',
+    ]
+    bootstrap_domains.each_with_index { |domain, i| bootstrap_lines << "    #{i} => '#{domain}'," }
+    bootstrap_lines += [
+      '  ),',
+      "  'datadirectory' => '#{nextcloud_data}',",
+      "  'dbtype' => 'mysql',",
+      "  'dbhost' => '#{new_resource.database_host}',",
+      "  'dbname' => '#{new_resource.database_name}',",
+      "  'dbuser' => '#{new_resource.database_user}',",
+      "  'dbpassword' => '#{new_resource.database_password}',",
+      "  'dbtableprefix' => 'oc_',",
+      "  'mysql.utf8mb4' => true,",
+      "  'version' => '#{bootstrap_version}',",
+      "  'installed' => true,",
+      ');',
+    ]
+
+    # :create_if_missing: bootstrap once; afterwards occ owns config.php.
+    file "#{nextcloud_webroot}/config/config.php" do
+      owner 'apache'
+      group 'apache'
+      mode '0640'
+      sensitive true
+      content "#{bootstrap_lines.join("\n")}\n"
+      action :create_if_missing
+      only_if { ::Dir.exist?("#{nextcloud_webroot}/config") }
+    end
+  end
+
   package osl_redis_pkg
 
   service osl_redis_pkg do
@@ -329,6 +397,20 @@ action :create do
     only_if { nc_installed == true }
   end
 
+  # Self-heal/resume: run occ upgrade when config.php's version is behind the deployed code
+  # but ark did not just extract (so upgrade-nextcloud was not notified). Must run before the
+  # config:system:set steps, which fail in "needs upgrade" mode. No-op once versions match.
+  ruby_block 'trigger-pending-upgrade' do
+    block { Chef::Log.info('config.php version is behind the deployed code; running occ upgrade') }
+    notifies :run, 'execute[upgrade-nextcloud]', :immediately
+    only_if do
+      code_version = nextcloud_installed_version(nextcloud_webroot) || nextcloud_version
+      config_version = nextcloud_config_version(nextcloud_webroot)
+      nc_installed == true && config_version &&
+        Gem::Version.new(config_version) < Gem::Version.new(code_version)
+    end
+  end if download_successful
+
   new_trusted_domains.each do |domain|
     execute "nextcloud-config: trusted-domains-#{domain}" do
       cwd nextcloud_webroot
@@ -386,12 +468,23 @@ action :create do
     not_if { nc_config['system']['default_phone_region'] == 'us' }
   end if download_successful
 
+  # Infer an occ --type flag so Ruby booleans/integers are stored typed (occ defaults to
+  # string); the not_if then compares correctly. Strings stay untyped.
   new_resource.extra_config.each do |key, value|
+    type_flag =
+      case value
+      when true, false
+        ' --type=boolean'
+      when Integer
+        ' --type=integer'
+      else
+        ''
+      end
     execute "nextcloud-config: #{key}" do
       cwd nextcloud_webroot
       user 'apache'
       command <<~EOC
-        php occ config:system:set #{key} --value=#{value}
+        php occ config:system:set #{key} --value=#{value}#{type_flag}
       EOC
       not_if { nc_config['system'][key] == value }
     end if download_successful
@@ -509,6 +602,7 @@ action :create do
     group 'apache'
     recursive true
     only_if { download_successful }
-    only_if { theming_global_directory(nextcloud_data) }
+    # not_if (boolean) rather than only_if on the path string, which Chef warns about.
+    not_if { theming_global_directory(nextcloud_data).nil? }
   end
 end
