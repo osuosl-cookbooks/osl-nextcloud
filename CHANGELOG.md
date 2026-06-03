@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+3.1.0 (2026-06-03)
+------------------
+- Add configurable redis/valkey port
+
 3.0.0 (2026-06-02)
 ------------------
 - Add Nextcloud migration support and major-version upgrade staging
