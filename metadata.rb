@@ -9,6 +9,7 @@ chef_version      '>= 18.0'
 version           '3.0.0'
 
 depends          'ark'
+depends          'line'
 depends          'osl-apache'
 depends          'osl-php'
 depends          'osl-repos'

@@ -313,10 +313,28 @@ describe 'nextcloud-test::default' do
         it { is_expected.to create_link("#{nc_v}/custom_apps").with(to: "#{nc}/custom_apps") }
 
         redis_pkg = platform[:version].to_i >= 10 ? 'valkey' : 'redis'
+        redis_conf =
+          case platform[:version].to_i
+          when 8 then '/etc/redis.conf'
+          when 9 then '/etc/redis/redis.conf'
+          else '/etc/valkey/valkey.conf'
+          end
 
         it { is_expected.to install_package(redis_pkg) }
         it { is_expected.to enable_service(redis_pkg) }
         it { is_expected.to start_service(redis_pkg) }
+
+        it do
+          is_expected.to edit_replace_or_add('nextcloud: redis/valkey port').with(
+            path: redis_conf,
+            line: 'port 6379'
+          )
+        end
+
+        it do
+          expect(chef_run.replace_or_add('nextcloud: redis/valkey port')).to \
+            notify("service[#{redis_pkg}]").to(:restart).immediately
+        end
 
         it do
           is_expected.to create_apache_app('nextcloud.example.com').with(

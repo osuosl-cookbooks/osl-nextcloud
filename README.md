@@ -48,6 +48,7 @@ Installs and configures a complete Nextcloud instance. The default (and only) ac
 | `php_version` | String | `'8.3'` | PHP version to install. |
 | `php_packages` | Array | `[]` | Extra PHP packages to install beyond the defaults. |
 | `max_filesize` | String | `'1G'` | `upload_max_filesize` / `post_max_size`. |
+| `redis_port` | Integer | `6379` | Port for the Redis/Valkey `redis` config (`port`). Override when 6379 conflicts with another service. |
 | `database_host` | String (sensitive) | — | **Required.** Database host. |
 | `database_name` | String | — | **Required.** Database name. |
 | `database_user` | String (sensitive) | — | **Required.** Database user. |
