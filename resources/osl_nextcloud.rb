@@ -30,6 +30,7 @@ property :server_name, String, name_property: true
 property :sensitive, [true, false], default: true
 property :server_aliases, Array, default: %w(localhost)
 property :max_filesize, String, default: '1G'
+property :redis_port, Integer, default: 6379
 
 default_action :create
 
@@ -303,6 +304,17 @@ action :create do
 
   package osl_redis_pkg
 
+  # The default config listens on 6379; override the `port` directive in place so we can
+  # move off it when another service already holds that port. Only this one line changes;
+  # everything else (bind, unixsocket) stays at the package default.
+  replace_or_add 'nextcloud: redis/valkey port' do
+    path osl_redis_conf
+    pattern(/^port .*/)
+    line "port #{new_resource.redis_port}"
+    sensitive false
+    notifies :restart, "service[#{osl_redis_pkg}]", :immediately
+  end
+
   service osl_redis_pkg do
     action [:enable, :start]
   end
@@ -435,9 +447,9 @@ action :create do
     user 'apache'
     command <<~EOC
       php occ config:system:set redis host --value=127.0.0.1
-      php occ config:system:set redis port --value=6379
+      php occ config:system:set redis port --value=#{new_resource.redis_port}
     EOC
-    not_if { nc_config['system']['redis'] == { 'host' => '127.0.0.1', 'port' => '6379' } }
+    not_if { nc_config['system']['redis'] == { 'host' => '127.0.0.1', 'port' => new_resource.redis_port.to_s } }
   end if download_successful
 
   execute 'nextcloud-config: mail' do

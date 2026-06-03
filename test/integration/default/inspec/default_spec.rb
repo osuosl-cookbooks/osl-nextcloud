@@ -5,6 +5,12 @@ vagrant = inspec.file('/home/vagrant').exist?
 docker = inspec.file('/.dockerenv').exist?
 openstack = !vagrant and !docker
 redis_pkg = (os.family == 'redhat' && os.release.to_i >= 10) ? 'valkey' : 'redis'
+redis_conf =
+  case os.release.to_i
+  when 8 then '/etc/redis.conf'
+  when 9 then '/etc/redis/redis.conf'
+  else '/etc/valkey/valkey.conf'
+  end
 
 control 'osl_nextcloud' do
   def occ(cmd)
@@ -41,6 +47,12 @@ control 'osl_nextcloud' do
 
   describe service redis_pkg do
     it { should be_running }
+  end
+
+  # osl_nextcloud manages the `port` directive in place so it can be moved off 6379 when
+  # another service holds that port. The default recipe leaves it at 6379.
+  describe file redis_conf do
+    its('content') { should match /^port 6379$/ }
   end
 
   describe service 'httpd' do

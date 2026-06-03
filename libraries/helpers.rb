@@ -10,6 +10,21 @@ module OSLNextcloud
         (platform_family?('rhel') && node['platform_version'].to_i >= 10) ? 'valkey' : 'redis'
       end
 
+      # Path to the redis/valkey config file, which moved between EL releases:
+      #   EL8 redis  -> /etc/redis.conf
+      #   EL9 redis  -> /etc/redis/redis.conf
+      #   EL10 valkey -> /etc/valkey/valkey.conf
+      def osl_redis_conf
+        case node['platform_version'].to_i
+        when 8
+          '/etc/redis.conf'
+        when 9
+          '/etc/redis/redis.conf'
+        else
+          '/etc/valkey/valkey.conf'
+        end
+      end
+
       # Get latest version of nextcloud from Github
       def osl_nextcloud_latest_version(version)
         releases = []
