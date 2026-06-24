@@ -179,6 +179,8 @@ action :create do
     notifies :create, "link[#{nextcloud_webroot_versioned}/custom_apps]", :immediately
     notifies :create, "file[#{nextcloud_webroot}/config/apps_paths.config.php]", :immediately
     notifies :run, 'execute[upgrade-nextcloud]', :immediately
+    # Tarball ships a default .htaccess; regenerate the front-controller block after extraction.
+    notifies :run, 'execute[nextcloud-update-htaccess]', :immediately
     action :nothing
     only_if { download_successful }
   end
@@ -209,8 +211,9 @@ action :create do
     action :nothing
   end
 
+  # .htaccess included so occ maintenance:update:htaccess (run as apache) can rewrite it.
   execute 'fix-nextcloud-owner' do
-    command "chown -R apache:apache #{nextcloud_dir}/custom_apps #{nextcloud_webroot}/{apps,config}"
+    command "chown -R apache:apache #{nextcloud_dir}/custom_apps #{nextcloud_webroot}/{apps,config,.htaccess}"
     action :nothing
   end
 
@@ -519,6 +522,30 @@ action :create do
       php occ config:system:set maintenance_window_start --type=integer --value=#{new_resource.maintenance_window_start}
     EOC
     not_if { nc_config['system']['maintenance_window_start'] == new_resource.maintenance_window_start }
+  end if download_successful
+
+  # Pretty URLs: RewriteBase makes Nextcloud emit links without /index.php/. Direct
+  # /index.php/... URLs keep working (PHP path-info), so old links don't break.
+  execute 'nextcloud-config: htaccess.RewriteBase' do
+    cwd nextcloud_webroot
+    user 'apache'
+    command 'php occ config:system:set htaccess.RewriteBase --value=/'
+    notifies :run, 'execute[nextcloud-update-htaccess]', :immediately
+    not_if { nc_config['system']['htaccess.RewriteBase'] == '/' }
+  end if download_successful
+
+  # Rewrite .htaccess with the front-controller rules. Notified on RewriteBase set and on
+  # re-extraction; the front_controller_active marker keeps steady-state converges no-op.
+  execute 'nextcloud-update-htaccess' do
+    cwd nextcloud_webroot
+    user 'apache'
+    command 'php occ maintenance:update:htaccess'
+    action :nothing
+    only_if { ::File.exist?("#{nextcloud_webroot}/config/config.php") }
+    not_if do
+      htaccess = "#{nextcloud_webroot}/.htaccess"
+      ::File.exist?(htaccess) && ::File.read(htaccess).include?('front_controller_active')
+    end
   end if download_successful
 
   # One-time migration: move any user-installed (non-shipped) apps out of the versioned
