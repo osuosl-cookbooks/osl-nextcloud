@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+3.1.2 (2026-06-24)
+------------------
+- Fix htaccess ownership on already-deployed instances
+
 3.1.1 (2026-06-24)
 ------------------
 - Enable pretty URLs (drop /index.php/ from links)
