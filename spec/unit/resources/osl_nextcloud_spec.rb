@@ -32,6 +32,7 @@ describe 'nextcloud-test::default' do
             "mail_from_address": "noreply",
             "mail_domain": "example.com",
             "maintenance_window_start": 1,
+            "htaccess.RewriteBase": "/",
             "allow_user_to_change_display_name": false,
             "log_rotate_size": 104857600,
             "overwrite.cli.url": "https://nextcloud.example.com",
@@ -293,6 +294,7 @@ describe 'nextcloud-test::default' do
         it { expect(chef_run.ruby_block('ark_notifies')).to notify("link[#{nc_v}/custom_apps]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify("file[#{nc_wr}/config/apps_paths.config.php]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[nextcloud-update-htaccess]').to(:run).immediately }
 
         it do
           is_expected.to nothing_remote_file("#{nc_wr}/config/config.php").with(
@@ -306,7 +308,7 @@ describe 'nextcloud-test::default' do
 
         it do
           is_expected.to nothing_execute('fix-nextcloud-owner').with(
-            command: "chown -R apache:apache #{nc}/custom_apps #{nc_wr}/{apps,config}"
+            command: "chown -R apache:apache #{nc}/custom_apps #{nc_wr}/{apps,config,.htaccess}"
           )
         end
 
@@ -468,6 +470,27 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to run_execute('nextcloud-config: htaccess.RewriteBase').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: 'php occ config:system:set htaccess.RewriteBase --value=/'
+          )
+        end
+
+        it do
+          expect(chef_run.execute('nextcloud-config: htaccess.RewriteBase')).to \
+            notify('execute[nextcloud-update-htaccess]').to(:run).immediately
+        end
+
+        it do
+          is_expected.to nothing_execute('nextcloud-update-htaccess').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: 'php occ maintenance:update:htaccess'
+          )
+        end
+
+        it do
           is_expected.to create_file("#{nc_wr}/config/apps_paths.config.php").with(
             owner: 'apache',
             group: 'apache',
@@ -567,6 +590,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
         it { is_expected.to_not run_execute('nextcloud-config: overwrite.cli.url') }
         it { is_expected.to_not run_execute('nextcloud-config: maintenance_window_start') }
+        it { is_expected.to_not run_execute('nextcloud-config: htaccess.RewriteBase') }
         it { is_expected.to_not run_execute('nextcloud-config: allow_user_to_change_display_name') }
         it { is_expected.to_not run_execute('nextcloud-config: log_rotate_size') }
         it { is_expected.to_not run_execute('nextcloud-migrate-apps-to-custom') }

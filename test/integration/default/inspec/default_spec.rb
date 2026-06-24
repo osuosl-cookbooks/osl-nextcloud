@@ -135,6 +135,27 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^1$/ }
   end
 
+  # Pretty URLs: RewriteBase drives the front-controller rewrite, and
+  # maintenance:update:htaccess writes the front_controller_active marker into .htaccess.
+  # --output json escapes the slash, so the value prints as "\/".
+  describe command occ('config:system:get --output json htaccess.RewriteBase') do
+    its('stdout') { should match %r{^"\\/"$} }
+  end
+
+  describe file('/var/www/nextcloud.example.com/nextcloud/.htaccess') do
+    its('content') { should match /front_controller_active/ }
+  end
+
+  # index.php-less URLs resolve (200/30x, not 404); the login page is reachable without it.
+  describe command('curl -k -s -o /dev/null -w "%{http_code}" -H "Host: nextcloud.example.com" http://127.0.0.1/login') do
+    its('stdout') { should_not match /^404$/ }
+  end
+
+  # The legacy /index.php/ path still works too, so old links don't break.
+  describe command('curl -k -s -o /dev/null -w "%{http_code}" -H "Host: nextcloud.example.com" http://127.0.0.1/index.php/login') do
+    its('stdout') { should_not match /^404$/ }
+  end
+
   describe command occ('config:system:get --output json default_timezone') do
     its('stdout') { should match /^\"UTC\"\n$/ }
   end
@@ -187,6 +208,7 @@ control 'osl_nextcloud' do
   describe http('http://localhost', headers: { 'host' => 'nextcloud.example.com' }) do
     its('status') { should eq 302 }
     its('headers.Content-Type') { should match 'text/html' }
-    its('headers.Location') { should match 'http://nextcloud.example.com/index.php/login' }
+    # Pretty URLs: the redirect drops /index.php/.
+    its('headers.Location') { should match 'http://nextcloud.example.com/login' }
   end
 end
