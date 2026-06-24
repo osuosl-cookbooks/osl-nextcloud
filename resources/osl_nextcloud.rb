@@ -524,6 +524,15 @@ action :create do
     not_if { nc_config['system']['maintenance_window_start'] == new_resource.maintenance_window_start }
   end if download_successful
 
+  # Ensure .htaccess is apache-owned every converge (not just on ark extraction) so occ can
+  # rewrite it. No content property = ownership only, existing rules untouched. Must be
+  # :create not :create_if_missing: the file already exists root-owned; we fix its owner.
+  file "#{nextcloud_webroot}/.htaccess" do
+    owner 'apache'
+    group 'apache'
+    only_if { ::Dir.exist?(nextcloud_webroot_versioned) }
+  end if download_successful
+
   # Pretty URLs: RewriteBase makes Nextcloud emit links without /index.php/. Direct
   # /index.php/... URLs keep working (PHP path-info), so old links don't break.
   execute 'nextcloud-config: htaccess.RewriteBase' do

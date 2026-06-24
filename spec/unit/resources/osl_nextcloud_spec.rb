@@ -470,6 +470,13 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to create_file("#{nc_wr}/.htaccess").with(
+            owner: 'apache',
+            group: 'apache'
+          )
+        end
+
+        it do
           is_expected.to run_execute('nextcloud-config: htaccess.RewriteBase').with(
             cwd: nc_wr,
             user: 'apache',
