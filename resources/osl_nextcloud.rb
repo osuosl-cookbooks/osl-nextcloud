@@ -368,7 +368,6 @@ action :create do
     nc_apps = osl_nextcloud_apps
 
     nc_installed = nc_config['system']['installed']
-    cur_trusted_domains = nc_config['system']['trusted_domains']
     new_trusted_domains = [new_resource.server_name, new_resource.server_aliases].flatten!.sort.uniq
   end
 
@@ -426,12 +425,15 @@ action :create do
     end
   end if download_successful
 
+  # Guarded by the converge-time helper, not the nc_config snapshot: the snapshot
+  # predates install-nextcloud, and set-by-index overwrites whatever entry holds
+  # the slot, so stale data leaves the first converge missing a domain.
   new_trusted_domains.each do |domain|
     execute "nextcloud-config: trusted-domains-#{domain}" do
       cwd nextcloud_webroot
       user 'apache'
       command "php occ config:system:set trusted_domains #{new_trusted_domains.find_index(domain)} --value=#{domain}"
-      not_if { cur_trusted_domains.include?(domain) }
+      not_if { nextcloud_trusted_domain?(domain) }
     end
   end if download_successful
 

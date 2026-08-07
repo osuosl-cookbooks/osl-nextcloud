@@ -156,6 +156,15 @@ control 'osl_nextcloud' do
     its('stdout') { should_not match /^404$/ }
   end
 
+  # All configured trusted domains survive a single converge. The fresh install
+  # writes localhost at index 0 and cloud.example.com sorts before it, so
+  # set-by-index overwrites the installer's entry mid-run — the converge-time
+  # guards must re-add localhost in the same run (the provisioner's second cinc
+  # run enforces idempotency on top of this).
+  describe command occ('config:system:get trusted_domains') do
+    its('stdout') { should eq "cloud.example.com\nlocalhost\nnextcloud.example.com\n" }
+  end
+
   describe command occ('config:system:get --output json default_timezone') do
     its('stdout') { should match /^\"UTC\"\n$/ }
   end

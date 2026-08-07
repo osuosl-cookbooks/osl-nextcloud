@@ -105,6 +105,21 @@ module OSLNextcloud
         JSON.parse(cmd.stdout)
       end
 
+      # Return true if the live Nextcloud config already lists this trusted domain.
+      # Queried at converge time rather than from the osl_nextcloud_config snapshot:
+      # the snapshot predates install-nextcloud, and config:system:set by index
+      # overwrites whatever entry holds the slot, so stale data leaves the first
+      # converge missing a domain.
+      def nextcloud_trusted_domain?(domain)
+        cmd = shell_out(
+          'php occ config:system:get trusted_domains',
+          cwd: "/var/www/#{new_resource.server_name}/nextcloud",
+          user: 'apache',
+          group: 'apache'
+        )
+        cmd.stdout.split("\n").map(&:strip).include?(domain)
+      end
+
       # changed pecl-imagick to imagick
       def osl_nextcloud_php_packages
         if node['platform_version'].to_i >= 9

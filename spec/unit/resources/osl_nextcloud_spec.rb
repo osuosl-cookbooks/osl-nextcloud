@@ -68,6 +68,22 @@ describe 'nextcloud-test::default' do
 
       context 'nextcloud not installed' do
         before do
+          # Converge-time guards: by the time they run, install-nextcloud has
+          # written localhost; the other domains are still missing.
+          %w(cloud.example.com localhost nextcloud.example.com).each do |domain|
+            stubs_for_resource("execute[nextcloud-config: trusted-domains-#{domain}]") do |resource|
+              allow(resource).to receive_shell_out(
+                'php occ config:system:get trusted_domains',
+                {
+                  cwd: '/var/www/nextcloud.example.com/nextcloud',
+                  user: 'apache',
+                  group: 'apache',
+                }
+              ).and_return(
+                double(stdout: "localhost\n", exitstatus: 0)
+              )
+            end
+          end
           stubs_for_provider('osl_nextcloud[nextcloud.example.com]') do |provider|
             allow(provider).to receive_shell_out(
               'php occ --no-warnings config:list --private',
@@ -383,6 +399,17 @@ describe 'nextcloud-test::default' do
 
         it { expect(chef_run.execute('upgrade-nextcloud')).to notify('execute[nextcloud-db-add-missing]').to(:run).delayed }
 
+        # cloud.example.com sorts to index 0 and overwrites the installer's
+        # localhost entry; the converge-time guard (stubbed: only localhost
+        # present) skips localhost and re-sets the missing domains.
+        it do
+          is_expected.to run_execute('nextcloud-config: trusted-domains-cloud.example.com').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: 'php occ config:system:set trusted_domains 0 --value=cloud.example.com'
+          )
+        end
+
         it do
           is_expected.to_not run_execute('nextcloud-config: trusted-domains-localhost')
         end
@@ -391,7 +418,7 @@ describe 'nextcloud-test::default' do
           is_expected.to run_execute('nextcloud-config: trusted-domains-nextcloud.example.com').with(
             cwd: nc_wr,
             user: 'apache',
-            command: 'php occ config:system:set trusted_domains 1 --value=nextcloud.example.com'
+            command: 'php occ config:system:set trusted_domains 2 --value=nextcloud.example.com'
           )
         end
 
@@ -567,6 +594,7 @@ describe 'nextcloud-test::default' do
 
       context 'nextcloud installed' do
         before do
+          allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:nextcloud_trusted_domain?).and_return(true)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
           allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to \
@@ -589,8 +617,9 @@ describe 'nextcloud-test::default' do
 
         it { is_expected.to_not run_execute('install-nextcloud') }
         it { is_expected.to_not run_execute('upgrade-nextcloud') }
-        it { is_expected.to_not run_execute('trusted-domains-localhost') }
-        it { is_expected.to_not run_execute('trusted-domains-nextcloud.example.com') }
+        it { is_expected.to_not run_execute('nextcloud-config: trusted-domains-cloud.example.com') }
+        it { is_expected.to_not run_execute('nextcloud-config: trusted-domains-localhost') }
+        it { is_expected.to_not run_execute('nextcloud-config: trusted-domains-nextcloud.example.com') }
         it { is_expected.to_not run_execute('nextcloud-config: memcache') }
         it { is_expected.to_not run_execute('nextcloud-config: redis') }
         it { is_expected.to_not run_execute('nextcloud-config: mail') }
@@ -642,6 +671,7 @@ describe 'nextcloud-test::migrate' do
   occ_apps = JSON.parse('{"enabled":{},"disabled":{}}')
 
   before do
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:nextcloud_trusted_domain?).and_return(true)
     allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:can_install?).and_return(false)
     allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
     allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_apps).and_return(occ_apps)
@@ -730,6 +760,7 @@ describe 'nextcloud-test::upgrade' do
       'password_salt' => 'il4t2Kt3sJT+y7R5T3STtlDBgZy/S6',
       'secret' => 'aG7+wjGIP0FOQOAgJgsHoeGnAibLN60Cyy14TuYWDZxrZlfg',
     }
+    allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:nextcloud_trusted_domain?).and_return(true)
     allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_config).and_return(occ_config)
     allow_any_instance_of(OSLNextcloud::Cookbook::Helpers).to receive(:osl_nextcloud_apps).and_return(JSON.parse('{"enabled":{},"disabled":{}}'))
     # Adopted instance reports installed, so maintenance:install is unavailable -> can_install? false.
