@@ -42,7 +42,11 @@ osl_nextcloud 'nextcloud.example.com' do
     'allow_user_to_change_display_name' => false,
     'log_rotate_size' => 104857600
   )
-  server_aliases %w(localhost nextcloud.example.com)
+  # cloud.example.com sorts before localhost, so set-by-index 0 overwrites the
+  # installer's localhost entry mid-converge — regression coverage proving the
+  # converge-time trusted-domain guards re-add it in the same run (the second
+  # cinc run then enforces idempotency).
+  server_aliases %w(cloud.example.com localhost nextcloud.example.com)
 end
 
 # Used for testing
