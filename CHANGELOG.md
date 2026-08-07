@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+3.1.3 (2026-08-07)
+------------------
+- Fix trusted_domains idempotency on first converge
+
 3.1.2 (2026-06-24)
 ------------------
 - Fix htaccess ownership on already-deployed instances
