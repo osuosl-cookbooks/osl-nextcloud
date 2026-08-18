@@ -37,6 +37,8 @@ osl_nextcloud 'nextcloud.example.com' do
   nextcloud_admin_password 'unguessable'
   mail_domain 'example.com'
   php_packages %w(ldap)
+  # Set only by ChefSpec, to cover the non-load-balanced path.
+  behind_loadbalancer node['nextcloud_behind_lb'] unless node['nextcloud_behind_lb'].nil?
   extra_config(
     'default_timezone' => 'UTC',
     'allow_user_to_change_display_name' => false,

@@ -135,6 +135,11 @@ control 'osl_nextcloud' do
     its('stdout') { should match /^1$/ }
   end
 
+  describe command occ('config:system:get overwriteprotocol') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match /^https$/ }
+  end
+
   # Pretty URLs: RewriteBase drives the front-controller rewrite, and
   # maintenance:update:htaccess writes the front_controller_active marker into .htaccess.
   # --output json escapes the slash, so the value prints as "\/".
@@ -217,7 +222,8 @@ control 'osl_nextcloud' do
   describe http('http://localhost', headers: { 'host' => 'nextcloud.example.com' }) do
     its('status') { should eq 302 }
     its('headers.Content-Type') { should match 'text/html' }
-    # Pretty URLs: the redirect drops /index.php/.
-    its('headers.Location') { should match 'http://nextcloud.example.com/login' }
+    # Pretty URLs: the redirect drops /index.php/. behind_loadbalancer pins the scheme to
+    # https even though kitchen is reached over http.
+    its('headers.Location') { should match 'https://nextcloud.example.com/login' }
   end
 end
