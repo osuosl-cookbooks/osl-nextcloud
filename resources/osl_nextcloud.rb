@@ -5,6 +5,8 @@ property :version, String, default: '33'
 property :checksum, String
 property :apps, Array, default: []
 property :apps_disable, Array, default: []
+# Pins overwriteprotocol to https, since TLS terminates at the load balancer.
+property :behind_loadbalancer, [true, false], default: true
 property :database_host, String, sensitive: true, required: true
 property :database_name, String, required: true
 property :database_password, String, sensitive: true, required: true
@@ -36,7 +38,7 @@ default_action :create
 
 action :create do
   node.default['osl-apache']['mpm'] = 'event'
-  node.default['osl-apache']['behind_loadbalancer'] = true
+  node.default['osl-apache']['behind_loadbalancer'] = new_resource.behind_loadbalancer
 
   include_recipe 'osl-selinux'
   include_recipe 'osl-apache'
@@ -516,6 +518,17 @@ action :create do
     EOC
     not_if { nc_config['system']['overwrite.cli.url'] == "#{osl_nextcloud_scheme}://#{new_resource.server_name}" }
   end if download_successful
+
+  # The backend connection is plain HTTP, so without this the post-login Location is
+  # http:// and browsers block that redirect under the login page's CSP form-action.
+  execute 'nextcloud-config: overwriteprotocol' do
+    cwd nextcloud_webroot
+    user 'apache'
+    command <<~EOC
+      php occ config:system:set overwriteprotocol --value=https
+    EOC
+    not_if { nc_config['system']['overwriteprotocol'] == 'https' }
+  end if download_successful && new_resource.behind_loadbalancer
 
   execute 'nextcloud-config: maintenance_window_start' do
     cwd nextcloud_webroot

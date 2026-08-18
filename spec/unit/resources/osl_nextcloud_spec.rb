@@ -36,6 +36,7 @@ describe 'nextcloud-test::default' do
             "allow_user_to_change_display_name": false,
             "log_rotate_size": 104857600,
             "overwrite.cli.url": "https://nextcloud.example.com",
+            "overwriteprotocol": "https",
             "trusted_domains": [ "localhost", "nextcloud.example.com" ],
             "redis": {
                 "host": "127.0.0.1",
@@ -489,6 +490,14 @@ describe 'nextcloud-test::default' do
         end
 
         it do
+          is_expected.to run_execute('nextcloud-config: overwriteprotocol').with(
+            cwd: nc_wr,
+            user: 'apache',
+            command: "php occ config:system:set overwriteprotocol --value=https\n"
+          )
+        end
+
+        it do
           is_expected.to run_execute('nextcloud-config: maintenance_window_start').with(
             cwd: nc_wr,
             user: 'apache',
@@ -590,6 +599,16 @@ describe 'nextcloud-test::default' do
         end
 
         it { is_expected.to create_directory(nc_theming).with(owner: 'apache', group: 'apache', recursive: true) }
+
+        context 'not behind a load balancer' do
+          cached(:chef_run) do
+            runner.node.override['nextcloud_behind_lb'] = false
+            runner.converge(described_recipe)
+          end
+
+          it { is_expected.to_not run_execute('nextcloud-config: overwriteprotocol') }
+          it { expect(chef_run.node['osl-apache']['behind_loadbalancer']).to be false }
+        end
       end
 
       context 'nextcloud installed' do
@@ -625,6 +644,7 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not run_execute('nextcloud-config: mail') }
         it { is_expected.to_not run_execute('nextcloud-config: phone_region') }
         it { is_expected.to_not run_execute('nextcloud-config: overwrite.cli.url') }
+        it { is_expected.to_not run_execute('nextcloud-config: overwriteprotocol') }
         it { is_expected.to_not run_execute('nextcloud-config: maintenance_window_start') }
         it { is_expected.to_not run_execute('nextcloud-config: htaccess.RewriteBase') }
         it { is_expected.to_not run_execute('nextcloud-config: allow_user_to_change_display_name') }

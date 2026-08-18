@@ -27,8 +27,8 @@ upgrades between Nextcloud versions, and adopting an existing (imported) databas
 ## Attributes
 
 This cookbook exposes no user-facing node attributes; all configuration is done through
-the `osl_nextcloud` resource. (It does set `node['osl-apache']['mpm']` and
-`node['osl-apache']['behind_loadbalancer']` internally.)
+the `osl_nextcloud` resource. (It does set `node['osl-apache']['mpm']` internally, and
+`node['osl-apache']['behind_loadbalancer']` from the `behind_loadbalancer` property.)
 
 ## Resources
 
@@ -60,6 +60,7 @@ Installs and configures a complete Nextcloud instance. The default (and only) ac
 | `mail_from_address` | String | `'noreply'` | From address. |
 | `apps` | Array | `[]` | Apps to `app:install` and `app:enable`. |
 | `apps_disable` | Array | `[]` | Apps to `app:disable`. |
+| `behind_loadbalancer` | true/false | `true` | Pin `overwriteprotocol` to `https`. Nextcloud builds absolute URLs (notably the post-login redirect `Location`) from the scheme it detects on the request; with TLS terminating at the load balancer the backend connection is plain HTTP, so without this the redirect is emitted as `http://` and browsers block it under the login page's CSP `form-action 'self'`. |
 | `extra_config` | Hash | `{}` | Extra `config:system:set` values. Ruby booleans/integers are written with the matching `--type=boolean`/`--type=integer`; strings are written untyped. |
 | `maintenance_window_start` | Integer | `1` | `maintenance_window_start` (UTC hour). |
 | `instance_id` | String (sensitive) | — | Adopt mode: `instanceid` of an existing instance. |
