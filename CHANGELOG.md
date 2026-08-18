@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+3.2.0 (2026-08-18)
+------------------
+- Add behind_loadbalancer property to pin overwriteprotocol
+
 3.1.3 (2026-08-07)
 ------------------
 - Fix trusted_domains idempotency on first converge
