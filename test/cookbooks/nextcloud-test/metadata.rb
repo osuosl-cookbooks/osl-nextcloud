@@ -5,5 +5,6 @@ license           'All Rights Reserved'
 description       'Generic osl-nextcloud testing cookbook'
 version           '0.1.0'
 
+depends 'line'
 depends 'osl-nextcloud'
 depends 'osl-mysql'

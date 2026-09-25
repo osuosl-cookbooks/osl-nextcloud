@@ -3,11 +3,6 @@ require 'chefspec/berkshelf'
 
 Dir['libraries/*.rb'].each { |f| require File.expand_path(f) }
 
-ALMA_8 = {
-  platform: 'almalinux',
-  version: '8',
-}.freeze
-
 ALMA_9 = {
   platform: 'almalinux',
   version: '9',
@@ -19,7 +14,6 @@ ALMA_10 = {
 }.freeze
 
 ALL_PLATFORMS = [
-  ALMA_8,
   ALMA_9,
   ALMA_10,
 ].freeze

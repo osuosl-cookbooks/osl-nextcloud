@@ -6,25 +6,6 @@ module OSLNextcloud
       require 'open-uri'
       require 'uri'
 
-      def osl_redis_pkg
-        (platform_family?('rhel') && node['platform_version'].to_i >= 10) ? 'valkey' : 'redis'
-      end
-
-      # Path to the redis/valkey config file, which moved between EL releases:
-      #   EL8 redis  -> /etc/redis.conf
-      #   EL9 redis  -> /etc/redis/redis.conf
-      #   EL10 valkey -> /etc/valkey/valkey.conf
-      def osl_redis_conf
-        case node['platform_version'].to_i
-        when 8
-          '/etc/redis.conf'
-        when 9
-          '/etc/redis/redis.conf'
-        else
-          '/etc/valkey/valkey.conf'
-        end
-      end
-
       # Get latest version of nextcloud from Github
       def osl_nextcloud_latest_version(version)
         releases = []
@@ -120,37 +101,20 @@ module OSLNextcloud
         cmd.stdout.split("\n").map(&:strip).include?(domain)
       end
 
-      # changed pecl-imagick to imagick
       def osl_nextcloud_php_packages
-        if node['platform_version'].to_i >= 9
-          %w(
-            bcmath
-            gd
-            gmp
-            intl
-            mbstring
-            mysqlnd
-            opcache
-            pecl-apcu
-            imagick
-            pecl-redis6
-            zip
-          )
-        else
-          %w(
-            bcmath
-            gd
-            gmp
-            intl
-            mbstring
-            mysqlnd
-            opcache
-            pecl-apcu
-            pecl-imagick-im7
-            pecl-redis6
-            zip
-          )
-        end
+        %w(
+          bcmath
+          gd
+          gmp
+          intl
+          mbstring
+          mysqlnd
+          opcache
+          pecl-apcu
+          imagick
+          pecl-redis6
+          zip
+        )
       end
 
       # Deployed code version from version.php ($OC_Version) as a dotted string, or nil if

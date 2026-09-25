@@ -4,13 +4,6 @@
 vagrant = inspec.file('/home/vagrant').exist?
 docker = inspec.file('/.dockerenv').exist?
 openstack = !vagrant and !docker
-redis_pkg = (os.family == 'redhat' && os.release.to_i >= 10) ? 'valkey' : 'redis'
-redis_conf =
-  case os.release.to_i
-  when 8 then '/etc/redis.conf'
-  when 9 then '/etc/redis/redis.conf'
-  else '/etc/valkey/valkey.conf'
-  end
 
 control 'osl_nextcloud' do
   def occ(cmd)
@@ -41,18 +34,29 @@ control 'osl_nextcloud' do
     it { should be_installed }
   end
 
-  describe package redis_pkg do
-    it { should be_installed }
-  end
-
-  describe service redis_pkg do
+  # The distributed cache is an osl-valkey instance, not the packaged server
+  describe service 'valkey@nextcloud' do
+    it { should be_enabled }
     it { should be_running }
   end
 
-  # osl_nextcloud manages the `port` directive in place so it can be moved off 6379 when
-  # another service holds that port. The default recipe leaves it at 6379.
-  describe file redis_conf do
-    its('content') { should match /^port 6379$/ }
+  describe command 'systemctl show -p Restart valkey@nextcloud.service' do
+    its('stdout') { should eq "Restart=on-failure\n" }
+  end
+
+  describe port 6379 do
+    it { should be_listening }
+    its('addresses') { should eq ['127.0.0.1'] }
+  end
+
+  {
+    'maxmemory' => '536870912',
+    'maxmemory-policy' => 'allkeys-lru',
+    'save' => '',
+  }.each do |key, value|
+    describe command "valkey-cli -p 6379 CONFIG GET #{key}" do
+      its('stdout') { should eq "#{key}\n#{value}\n" }
+    end
   end
 
   describe service 'httpd' do
@@ -225,5 +229,10 @@ control 'osl_nextcloud' do
     # Pretty URLs: the redirect drops /index.php/. behind_loadbalancer pins the scheme to
     # https even though kitchen is reached over http.
     its('headers.Location') { should match 'https://nextcloud.example.com/login' }
+  end
+
+  # The page loads above go through Nextcloud's distributed cache, so it can't be empty
+  describe command 'valkey-cli -p 6379 DBSIZE' do
+    its('stdout.to_i') { should be > 0 }
   end
 end

@@ -1,16 +1,17 @@
 # osl-nextcloud
 
 Installs and configures [Nextcloud](https://nextcloud.com/) behind Apache with PHP-FPM and
-Redis/Valkey, via the `osl_nextcloud` custom resource. It handles fresh installs, in-place
+a local Valkey cache, via the `osl_nextcloud` custom resource. It handles fresh installs, in-place
 upgrades between Nextcloud versions, and adopting an existing (imported) database.
 
 ## Requirements
 
 ### Platforms
 
-- AlmaLinux 8
-- AlmaLinux 9
+- AlmaLinux 9 (9.7+)
 - AlmaLinux 10
+
+9.7 is the first release with `valkey` in AppStream.
 
 ### Chef
 
@@ -23,6 +24,7 @@ upgrades between Nextcloud versions, and adopting an existing (imported) databas
 - `osl-php` — PHP install, `php.ini`, and PHP-FPM pool
 - `osl-repos` — EPEL (and Alma) repositories
 - `osl-selinux` — SELinux contexts and booleans
+- `osl-valkey` (>= 2.0.0) — the `valkey@nextcloud` cache instance
 
 ## Attributes
 
@@ -48,7 +50,8 @@ Installs and configures a complete Nextcloud instance. The default (and only) ac
 | `php_version` | String | `'8.3'` | PHP version to install. |
 | `php_packages` | Array | `[]` | Extra PHP packages to install beyond the defaults. |
 | `max_filesize` | String | `'1G'` | `upload_max_filesize` / `post_max_size`. |
-| `redis_port` | Integer | `6379` | Port for the Redis/Valkey `redis` config (`port`). Override when 6379 conflicts with another service. |
+| `redis_port` | Integer | `6379` | Port `valkey@nextcloud` listens on, and Nextcloud's `redis` port. Override when 6379 conflicts with another service. |
+| `valkey_maxmemory` | String | `'512mb'` | `maxmemory` for `valkey@nextcloud`. |
 | `database_host` | String (sensitive) | — | **Required.** Database host. |
 | `database_name` | String | — | **Required.** Database name. |
 | `database_user` | String (sensitive) | — | **Required.** Database user. |
@@ -88,6 +91,21 @@ osl_nextcloud 'nextcloud.example.com' do
   )
 end
 ```
+
+#### Cache
+
+Nextcloud's distributed cache (`memcache.distributed`) runs on an osl-valkey instance,
+`valkey@nextcloud`, bound to `127.0.0.1` on `redis_port`. It has no persistence and uses
+`allkeys-lru` eviction, since every key in it is disposable. osl-valkey restarts it on
+failure, and osl-prometheus's redis_exporter finds and monitors it on its own
+(`valkey_instance="nextcloud"`, `ValkeyDown`). The instance is always named `nextcloud`, so
+several `osl_nextcloud` resources on one host share it and must agree on `redis_port` and
+`valkey_maxmemory`; osl-valkey fails the converge if they differ.
+
+Earlier releases ran the packaged `redis.service` (EL9) or `valkey.service` (EL10) on the
+same port instead. The resource no longer manages that server, so on a host that had one,
+stop and disable it immediately before the first converge with `valkey@nextcloud`; the new
+instance cannot bind the port while the old server holds it.
 
 ## Recipes
 

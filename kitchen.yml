@@ -20,7 +20,6 @@ provisioner:
   deprecations_as_errors: true
 
 platforms:
-  - name: almalinux-8
   - name: almalinux-9
   - name: almalinux-10
 

@@ -32,7 +32,9 @@ property :server_name, String, name_property: true
 property :sensitive, [true, false], default: true
 property :server_aliases, Array, default: %w(localhost)
 property :max_filesize, String, default: '1G'
+# Port valkey@nextcloud listens on; move it off 6379 when another service holds it
 property :redis_port, Integer, default: 6379
+property :valkey_maxmemory, String, default: '512mb'
 
 default_action :create
 
@@ -307,21 +309,15 @@ action :create do
     end
   end
 
-  package osl_redis_pkg
-
-  # The default config listens on 6379; override the `port` directive in place so we can
-  # move off it when another service already holds that port. Only this one line changes;
-  # everything else (bind, unixsocket) stays at the package default.
-  replace_or_add 'nextcloud: redis/valkey port' do
-    path osl_redis_conf
-    pattern(/^port .*/)
-    line "port #{new_resource.redis_port}"
-    sensitive false
-    notifies :restart, "service[#{osl_redis_pkg}]", :immediately
-  end
-
-  service osl_redis_pkg do
-    action [:enable, :start]
+  # Nextcloud's distributed cache: every key is disposable, so no persistence
+  osl_valkey 'nextcloud' do
+    instance true
+    port new_resource.redis_port
+    bind '127.0.0.1'
+    firewall false
+    maxmemory new_resource.valkey_maxmemory
+    maxmemory_policy 'allkeys-lru'
+    save ''
   end
 
   apache_app new_resource.server_name do
