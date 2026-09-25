@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+4.0.0 (2026-09-25)
+------------------
+- Run the Nextcloud cache on a valkey@nextcloud instance
+
 3.2.0 (2026-08-18)
 ------------------
 - Add behind_loadbalancer property to pin overwriteprotocol
