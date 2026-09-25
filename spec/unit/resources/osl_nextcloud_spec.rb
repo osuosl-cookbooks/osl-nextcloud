@@ -289,7 +289,7 @@ describe 'nextcloud-test::default' do
 
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[fix-nextcloud-owner]').to(:run).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[disable-nextcloud-crontab]').to(:run).immediately }
-        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[systemctl restart php-fpm]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('service[php-fpm]').to(:restart).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify("link[#{nc_v}/custom_apps]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify("file[#{nc_wr}/config/apps_paths.config.php]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
@@ -363,7 +363,6 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not create_if_missing_file("#{nc_wr}/config/config.php") }
 
         it { is_expected.to nothing_execute('disable-nextcloud-crontab').with(command: 'crontab -u apache -r') }
-        it { is_expected.to nothing_execute 'systemctl restart php-fpm' }
 
         it do
           is_expected.to nothing_execute('upgrade-nextcloud').with(

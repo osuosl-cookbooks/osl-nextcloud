@@ -179,7 +179,7 @@ action :create do
     notifies :create, "remote_file[#{nextcloud_webroot}/config/config.php]", :immediately
     notifies :run, 'execute[fix-nextcloud-owner]', :immediately
     notifies :run, 'execute[disable-nextcloud-crontab]', :immediately
-    notifies :run, 'execute[systemctl restart php-fpm]', :immediately
+    notifies :restart, 'service[php-fpm]', :immediately
     notifies :create, "link[#{nextcloud_webroot_versioned}/custom_apps]", :immediately
     notifies :create, "file[#{nextcloud_webroot}/config/apps_paths.config.php]", :immediately
     notifies :run, 'execute[upgrade-nextcloud]', :immediately
@@ -375,11 +375,6 @@ action :create do
     action :nothing
     only_if { download_successful }
     only_if { nc_installed == true && ::File.exist?('/var/spool/cron/apache') }
-  end
-
-  execute 'systemctl restart php-fpm' do
-    action :nothing
-    only_if { download_successful }
   end
 
   # https://docs.nextcloud.com/server/latest/admin_manual/maintenance/upgrade.html
