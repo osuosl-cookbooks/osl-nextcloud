@@ -153,38 +153,20 @@ describe 'nextcloud-test::default' do
         end
 
         it do
-          packages =
-            if platform[:version].to_i >= 9
-              %w(
-                bcmath
-                gd
-                gmp
-                imagick
-                intl
-                ldap
-                mbstring
-                mysqlnd
-                opcache
-                pecl-apcu
-                pecl-redis6
-                zip
-              )
-            else
-              %w(
-                bcmath
-                gd
-                gmp
-                intl
-                ldap
-                mbstring
-                mysqlnd
-                opcache
-                pecl-apcu
-                pecl-imagick-im7
-                pecl-redis6
-                zip
-              )
-            end
+          packages = %w(
+            bcmath
+            gd
+            gmp
+            imagick
+            intl
+            ldap
+            mbstring
+            mysqlnd
+            opcache
+            pecl-apcu
+            pecl-redis6
+            pecl-zip
+          )
 
           is_expected.to install_osl_php_install('osl-nextcloud').with(
             version: '8.3',
@@ -307,7 +289,7 @@ describe 'nextcloud-test::default' do
 
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[fix-nextcloud-owner]').to(:run).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[disable-nextcloud-crontab]').to(:run).immediately }
-        it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[systemctl restart php-fpm]').to(:run).immediately }
+        it { expect(chef_run.ruby_block('ark_notifies')).to notify('service[php-fpm]').to(:restart).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify("link[#{nc_v}/custom_apps]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify("file[#{nc_wr}/config/apps_paths.config.php]").to(:create).immediately }
         it { expect(chef_run.ruby_block('ark_notifies')).to notify('execute[upgrade-nextcloud]').to(:run).immediately }
@@ -331,28 +313,23 @@ describe 'nextcloud-test::default' do
 
         it { is_expected.to create_link("#{nc_v}/custom_apps").with(to: "#{nc}/custom_apps") }
 
-        redis_pkg = platform[:version].to_i >= 10 ? 'valkey' : 'redis'
-        redis_conf =
-          case platform[:version].to_i
-          when 8 then '/etc/redis.conf'
-          when 9 then '/etc/redis/redis.conf'
-          else '/etc/valkey/valkey.conf'
-          end
-
-        it { is_expected.to install_package(redis_pkg) }
-        it { is_expected.to enable_service(redis_pkg) }
-        it { is_expected.to start_service(redis_pkg) }
-
         it do
-          is_expected.to edit_replace_or_add('nextcloud: redis/valkey port').with(
-            path: redis_conf,
-            line: 'port 6379'
+          is_expected.to create_osl_valkey('nextcloud').with(
+            instance: true,
+            port: 6379,
+            bind: '127.0.0.1',
+            firewall: false,
+            maxmemory: '512mb',
+            maxmemory_policy: 'allkeys-lru',
+            save: ''
           )
         end
 
-        it do
-          expect(chef_run.replace_or_add('nextcloud: redis/valkey port')).to \
-            notify("service[#{redis_pkg}]").to(:restart).immediately
+        # The packaged server earlier releases ran is retired by hand, not here
+        %w(redis valkey).each do |svc|
+          it { is_expected.to_not install_package(svc) }
+          it { is_expected.to_not enable_service(svc) }
+          it { is_expected.to_not start_service(svc) }
         end
 
         it do
@@ -386,7 +363,6 @@ describe 'nextcloud-test::default' do
         it { is_expected.to_not create_if_missing_file("#{nc_wr}/config/config.php") }
 
         it { is_expected.to nothing_execute('disable-nextcloud-crontab').with(command: 'crontab -u apache -r') }
-        it { is_expected.to nothing_execute 'systemctl restart php-fpm' }
 
         it do
           is_expected.to nothing_execute('upgrade-nextcloud').with(
@@ -608,6 +584,17 @@ describe 'nextcloud-test::default' do
 
           it { is_expected.to_not run_execute('nextcloud-config: overwriteprotocol') }
           it { expect(chef_run.node['osl-apache']['behind_loadbalancer']).to be false }
+        end
+
+        # opf1 moves off 6379, which its Discourse redis holds
+        context 'with valkey overrides' do
+          cached(:chef_run) do
+            runner.node.override['nextcloud_redis_port'] = 6380
+            runner.node.override['nextcloud_valkey_maxmemory'] = '1gb'
+            runner.converge(described_recipe)
+          end
+
+          it { is_expected.to create_osl_valkey('nextcloud').with(port: 6380, maxmemory: '1gb') }
         end
       end
 

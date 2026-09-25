@@ -37,8 +37,10 @@ osl_nextcloud 'nextcloud.example.com' do
   nextcloud_admin_password 'unguessable'
   mail_domain 'example.com'
   php_packages %w(ldap)
-  # Set only by ChefSpec, to cover the non-load-balanced path.
+  # Set only by ChefSpec, to cover the non-load-balanced path and the valkey overrides.
   behind_loadbalancer node['nextcloud_behind_lb'] unless node['nextcloud_behind_lb'].nil?
+  redis_port node['nextcloud_redis_port'] if node['nextcloud_redis_port']
+  valkey_maxmemory node['nextcloud_valkey_maxmemory'] if node['nextcloud_valkey_maxmemory']
   extra_config(
     'default_timezone' => 'UTC',
     'allow_user_to_change_display_name' => false,
