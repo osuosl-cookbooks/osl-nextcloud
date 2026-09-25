@@ -165,7 +165,7 @@ describe 'nextcloud-test::default' do
             opcache
             pecl-apcu
             pecl-redis6
-            zip
+            pecl-zip
           )
 
           is_expected.to install_osl_php_install('osl-nextcloud').with(

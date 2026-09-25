@@ -113,7 +113,7 @@ module OSLNextcloud
           pecl-apcu
           imagick
           pecl-redis6
-          zip
+          pecl-zip
         )
       end
 
