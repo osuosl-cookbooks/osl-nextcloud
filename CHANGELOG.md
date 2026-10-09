@@ -2,6 +2,10 @@
 
 This file is used to list changes made in each version of the osl-nextcloud cookbook.
 
+4.0.1 (2026-10-09)
+------------------
+- Give Nextcloud's php-fpm the web-only MySQL read timeout
+
 4.0.0 (2026-09-25)
 ------------------
 - Run the Nextcloud cache on a valkey@nextcloud instance
