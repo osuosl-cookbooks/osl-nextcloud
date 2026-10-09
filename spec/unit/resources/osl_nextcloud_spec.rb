@@ -177,6 +177,9 @@ describe 'nextcloud-test::default' do
         end
 
         it { expect(chef_run.osl_php_install('osl-nextcloud')).to notify('service[php-fpm]').to(:reload) }
+        it { is_expected.to create_osl_php_web_service('php-fpm') }
+        it { expect(chef_run.notify_group('osl-php restart')).to notify('service[php-fpm]').to(:reload).delayed }
+        it { expect(chef_run.notify_group('osl-php restart')).to_not notify('service[php-fpm]').to(:restart) }
 
         %w(proxy proxy_fcgi).each do |m|
           it { is_expected.to enable_apache2_module m }

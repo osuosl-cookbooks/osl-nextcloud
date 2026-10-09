@@ -218,6 +218,20 @@ control 'osl_nextcloud' do
     its('content') { should match /^pm.max_spare_servers = 191$/ }
   end if docker
 
+  describe file('/etc/systemd/system/php-fpm.service.d/php-web-ini.conf') do
+    its('content') { should match %r{^Environment = PHP_INI_SCAN_DIR=:/etc/php-web\.d$} }
+  end
+
+  describe command('systemctl show -p Environment php-fpm.service') do
+    its('stdout') { should match %r{PHP_INI_SCAN_DIR=:/etc/php-web\.d} }
+  end
+
+  # A start after the drop-in landed means the running master read it; php-fpm hides its /proc environ
+  describe command('test $(date -d "$(systemctl show -p ExecMainStartTimestamp --value php-fpm.service)" +%s) ' \
+                   '-ge $(stat -c %Y /etc/systemd/system/php-fpm.service.d/php-web-ini.conf)') do
+    its('exit_status') { should eq 0 }
+  end
+
   describe http('http://localhost') do
     its('status') { should eq 200 }
     its('headers.Content-Type') { should match 'text/html' }

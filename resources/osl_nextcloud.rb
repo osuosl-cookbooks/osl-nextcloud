@@ -38,6 +38,12 @@ property :valkey_maxmemory, String, default: '512mb'
 
 default_action :create
 
+# Register before any ini can change: a failed run still fires the osl-php group's queued reload
+def after_created
+  super
+  osl_php_web_service_register('php-fpm')
+end
+
 action :create do
   node.default['osl-apache']['mpm'] = 'event'
   node.default['osl-apache']['behind_loadbalancer'] = new_resource.behind_loadbalancer
@@ -46,6 +52,9 @@ action :create do
   include_recipe 'osl-apache'
   include_recipe 'osl-apache::mod_remoteip'
   include_recipe 'osl-repos::epel'
+
+  # Web workers get osl-php's 300s MySQL read timeout; occ and cron keep the CLI default
+  osl_php_web_service 'php-fpm'
 
   osl_php_install 'osl-nextcloud' do
     version new_resource.php_version

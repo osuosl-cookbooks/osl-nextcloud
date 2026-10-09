@@ -10,7 +10,7 @@ version           '4.0.0'
 
 depends 'ark'
 depends 'osl-apache'
-depends 'osl-php'
+depends 'osl-php', '>= 7.9.0'
 depends 'osl-repos'
 depends 'osl-selinux'
 depends 'osl-valkey', '>= 2.0.0'
