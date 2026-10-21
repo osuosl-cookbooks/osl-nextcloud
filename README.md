@@ -23,7 +23,8 @@ upgrades between Nextcloud versions, and adopting an existing (imported) databas
 - `osl-apache` — Apache vhost (`apache_app`) and `mod_remoteip`
 - `osl-php` — PHP install, `php.ini`, and PHP-FPM pool; `osl_php_web_service` points
   php-fpm at osl-php's web-only ini directory (a 300s `mysqlnd.net_read_timeout`, so
-  workers recover from a MySQL failover; `occ` and cron keep the CLI default) and
+  workers recover from a MySQL failover, and `pcre.jit=0`, since SELinux denies JIT's
+  executable memory; `occ` and cron keep the CLI defaults) and
   reloads it when PHP configuration changes
 - `osl-repos` — EPEL (and Alma) repositories
 - `osl-selinux` — SELinux contexts and booleans
